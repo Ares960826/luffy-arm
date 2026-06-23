@@ -11,6 +11,9 @@ remote Linux server to **read, run, and diagnose**, behind tiered safety.
 Built entirely from **native parts** (SSH keys, `~/.ssh/config`, ControlMaster, POSIX
 ACLs, ssh-agent). No daemon, no custom protocol, nothing to trust beyond OpenSSH.
 
+> 👉 **New here? Start with [`TUTORIAL.md`](TUTORIAL.md)** — a complete, zero-assumptions
+> walkthrough (no prior SSH knowledge needed; ~15 minutes from nothing to a working channel).
+
 ---
 
 ## Why
@@ -55,6 +58,7 @@ git clone https://github.com/Ares960826/tentacle ~/.claude/skills/tentacle
 ```
 Then just tell Claude Code what you want — e.g. *"set up tentacle to my GPU box"* or
 *"use tentacle to poke around my server"* — and it follows [`SKILL.md`](SKILL.md).
+First time? The friendly end-to-end walkthrough is [`TUTORIAL.md`](TUTORIAL.md).
 
 **Via the toolkit:** it's also referenced from
 [`ares-agent-toolkit`](https://github.com/Ares960826/ares-agent-toolkit) as a submodule.
@@ -76,11 +80,12 @@ bash scripts/ssh-config.sh
 bash scripts/verify.sh        # → 🎉 all passed
 ```
 
-Full hand-holding walkthrough: [`references/setup-guide.md`](references/setup-guide.md).
+Full hand-holding walkthrough: [`TUTORIAL.md`](TUTORIAL.md).
 
 ## Layout
 
 ```
+TUTORIAL.md               # full human walkthrough — start here if you're new
 SKILL.md                  # agent playbook (read first if you're an AI agent)
 scripts/                  # keygen.sh · ssh-config.sh · verify.sh · grant.sh · params.example.sh
 references/               # setup-guide.md · server-setup.md · security-model.md
