@@ -1,4 +1,4 @@
-# tentacle — server-side setup (🖥 runs on the SERVER, by YOU)
+# luffy-arm — server-side setup (🖥 runs on the SERVER, by YOU)
 
 > These are the **privileged** steps. The AGENT does **not** run them — it generates a
 > filled-in version of these commands for you, and **you** run them on the server with
@@ -20,7 +20,7 @@ groups <CC_USER>                                    # confirm: no sudo; ideally 
 
 # === 2. Install the agent's PUBLIC key (the line printed by keygen.sh) ===
 sudo install -d -m 700 -o <CC_USER> -g <CC_USER> /home/<CC_USER>/.ssh
-echo 'ssh-ed25519 AAAA...paste the LOCAL tentacle_key.pub line... tentacle-cc' \
+echo 'ssh-ed25519 AAAA...paste the LOCAL luffy-arm-key.pub line... luffy-arm-cc' \
   | sudo tee /home/<CC_USER>/.ssh/authorized_keys
 sudo chown <CC_USER>:<CC_USER> /home/<CC_USER>/.ssh/authorized_keys
 sudo chmod 600 /home/<CC_USER>/.ssh/authorized_keys

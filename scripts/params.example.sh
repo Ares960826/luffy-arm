@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# tentacle — per-host parameters (EXAMPLE / TEMPLATE).
+# luffy-arm — per-host parameters (EXAMPLE / TEMPLATE).
 #
 # Copy this to your PRIVATE params file (OUTSIDE the repo) and fill in real values:
-#   mkdir -p ~/.config/tentacle && cp params.example.sh ~/.config/tentacle/params.sh
-#   ${EDITOR:-nano} ~/.config/tentacle/params.sh
-# Every script reads it via:  ${TENTACLE_PARAMS:-~/.config/tentacle/params.sh}
+#   mkdir -p ~/.config/luffy-arm && cp params.example.sh ~/.config/luffy-arm/params.sh
+#   ${EDITOR:-nano} ~/.config/luffy-arm/params.sh
+# Every script reads it via:  ${LUFFY_ARM_PARAMS:-~/.config/luffy-arm/params.sh}
 # NEVER commit your filled-in params.sh (real values live only on your machine).
 
 # --- connection ---
@@ -12,7 +12,7 @@ export SERVER="<SERVER_IP_OR_HOST>"        # host/IP only, no username
 export SSH_PORT="22"
 export CC_USER="cc"                         # dedicated NON-privileged account the agent logs in as
 export ADMIN_USER="<YOUR_OWN_USERNAME>"     # YOUR account (has sudo); used only by YOU for server-side root setup
-export KEY="$HOME/.ssh/tentacle_key"        # the agent's private key — MUST be passphrase-less (non-interactive login)
+export KEY="$HOME/.ssh/luffy-arm-key"        # the agent's private key — MUST be passphrase-less (non-interactive login)
 export HOST_ALIAS="<SSH_ALIAS>"             # ssh shortcut name, e.g. my-gpu-box
 
 # --- read-only roots: dirs the agent may read recursively (granted via ACL + default-ACL) ---

@@ -1,12 +1,12 @@
 ---
-name: tentacle
+name: luffy-arm
 description: Use when a local AI agent needs to reach into a remote Linux server over SSH — to explore data, run commands, inspect logs, or diagnose something on the server — or to set up that SSH access for the first time. Triggers include "connect to my server", "ssh into the remote box", "explore/poke around the server", "run this on the server", "set up remote access", "reverse remote-ssh", 远程服务器, 远程开发. Not for purely local work, and not for moving the agent or its config onto the server.
 ---
 
-# tentacle
+# luffy-arm
 
 Give a **local** agent a **remote hand**: the agent's brain (process, config, memory)
-stays on this machine; an SSH "tentacle" reaches into a remote Linux server to **read,
+stays on this machine; an SSH "arm" reaches into a remote Linux server to **read,
 run, and diagnose** — never to rewrite. Native parts only (SSH keys, ssh config,
 ControlMaster, POSIX ACLs). The agent logs in as a non-privileged `cc` account.
 
@@ -72,7 +72,7 @@ skill's directory. The complete human walkthrough is `TUTORIAL.md` — point the
    anything else — don't proceed without it.
 2. **Params — gather by asking, then write the file.** Ask for: server IP/host, their server
    username, an alias nickname, which dirs to read, which (if any) to write. **Write those
-   into `~/.config/tentacle/params.sh` yourself** (template: `scripts/params.example.sh`).
+   into `~/.config/luffy-arm/params.sh` yourself** (template: `scripts/params.example.sh`).
    Don't make the user hand-edit unless they prefer to.
 3. **Local — ask permission first** (these touch `~/.ssh`): run `bash scripts/keygen.sh`
    (prints the public key) then `bash scripts/ssh-config.sh`.

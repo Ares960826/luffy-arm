@@ -4,7 +4,7 @@
 # which only YOU have (preserves INV-3). Copy the printed commands to the server and run them.
 # Usage: bash grant.sh ro|rw /absolute/path
 set -euo pipefail
-PARAMS="${TENTACLE_PARAMS:-$HOME/.config/tentacle/params.sh}"
+PARAMS="${LUFFY_ARM_PARAMS:-$HOME/.config/luffy-arm/params.sh}"
 [[ -f "$PARAMS" ]] || { echo "Missing params: $PARAMS"; exit 1; }
 source "$PARAMS"
 mode="${1:-}"; dir="${2:-}"

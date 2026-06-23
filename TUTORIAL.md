@@ -1,4 +1,4 @@
-# tentacle — the complete tutorial
+# luffy-arm — the complete tutorial
 
 Zero to a working remote hand, assuming **no prior SSH experience**. By the end, your local
 Claude Code will read data and run commands on a remote Linux server — safely — while its
@@ -33,11 +33,11 @@ You need:
 ssh youruser@your.server.ip "echo it-works"
 ```
 - Prints `it-works` → ready. ✅
-- Asks for a **password** → fine, you have access. (tentacle switches the *agent* to a key;
+- Asks for a **password** → fine, you have access. (luffy-arm switches the *agent* to a key;
   your own login can stay as-is.)
 - `Connection refused` / `timeout` / `could not resolve hostname` → you don't have network or
   account access yet. Sort that with whoever owns the server first — getting an account is
-  outside tentacle's scope.
+  outside luffy-arm's scope.
 
 ---
 
@@ -46,9 +46,9 @@ ssh youruser@your.server.ip "echo it-works"
 ```
 💻 LOCAL (your machine)                          🖥 SERVER (the remote box)
 ┌────────────────────────────┐                  ┌──────────────────────────┐
-│ Claude Code = the brain     │  ssh (tentacle)  │ cc = a restricted guest  │
+│ Claude Code = the brain     │  ssh (luffy-arm)  │ cc = a restricted guest  │
 │ stays here, always          │ ───────────────▶ │ reads your data          │
-│ ~/.ssh/tentacle_key         │                  │ writes only in WORK_DIRS │
+│ ~/.ssh/luffy-arm-key         │                  │ writes only in WORK_DIRS │
 └────────────────────────────┘                  └──────────────────────────┘
 ```
 
@@ -68,14 +68,14 @@ them out for you to paste. That boundary is the point.
 
 ---
 
-## 2. Install tentacle
+## 2. Install luffy-arm
 
 ```bash
-git clone https://github.com/Ares960826/tentacle ~/.claude/skills/tentacle
+git clone https://github.com/Ares960826/luffy-arm ~/.claude/skills/luffy-arm
 ```
 
 Claude Code auto-discovers skills in `~/.claude/skills/`. Next time you mention reaching a
-remote server, the `tentacle` skill kicks in.
+remote server, the `luffy-arm` skill kicks in.
 
 ---
 
@@ -83,7 +83,7 @@ remote server, the `tentacle` skill kicks in.
 
 Open Claude Code and say:
 
-> "Use tentacle to set up access to my server `your.server.ip`, my login is `youruser`."
+> "Use luffy-arm to set up access to my server `your.server.ip`, my login is `youruser`."
 
 The agent will ask what to read/write, write your params file, ask permission and make the
 key + ssh config, hand you the server commands to paste, then verify. Want to understand each
@@ -93,12 +93,12 @@ step (or do it without the agent)? The manual path below is the exact same thing
 
 ## 4. The manual path, step by step
 
-### 4.1 — Tell tentacle about your server
+### 4.1 — Tell luffy-arm about your server
 
 ```bash
-mkdir -p ~/.config/tentacle
-cp ~/.claude/skills/tentacle/scripts/params.example.sh ~/.config/tentacle/params.sh
-${EDITOR:-nano} ~/.config/tentacle/params.sh
+mkdir -p ~/.config/luffy-arm
+cp ~/.claude/skills/luffy-arm/scripts/params.example.sh ~/.config/luffy-arm/params.sh
+${EDITOR:-nano} ~/.config/luffy-arm/params.sh
 ```
 Fill these (the rest can stay default):
 ```bash
@@ -113,16 +113,16 @@ export WORK_DIRS=( )                       # what it may WRITE (empty = fully re
 ### 4.2 — Make the agent's key (💻 LOCAL)
 
 ```bash
-bash ~/.claude/skills/tentacle/scripts/keygen.sh
+bash ~/.claude/skills/luffy-arm/scripts/keygen.sh
 ```
-Creates `~/.ssh/tentacle_key` (passphrase-less, so the agent can log in automatically) and
+Creates `~/.ssh/luffy-arm-key` (passphrase-less, so the agent can log in automatically) and
 prints a line starting `ssh-ed25519 AAAA…`. **Copy that whole line** — it's the *public* key
 you install on the server next.
 
 ### 4.3 — Name the connection (💻 LOCAL)
 
 ```bash
-bash ~/.claude/skills/tentacle/scripts/ssh-config.sh
+bash ~/.claude/skills/luffy-arm/scripts/ssh-config.sh
 ```
 Adds a short block to `~/.ssh/config` so you can type `ssh mybox`, and reuses one connection
 for speed.
@@ -147,7 +147,7 @@ you copied, **(3)** grant `cc` read-only on your `READ_ROOTS` and carve out your
 ### 4.5 — Verify (💻 LOCAL)
 
 ```bash
-bash ~/.claude/skills/tentacle/scripts/verify.sh
+bash ~/.claude/skills/luffy-arm/scripts/verify.sh
 ```
 Expected ending:
 ```
@@ -163,7 +163,7 @@ That confirms: passwordless login, connection reuse, the agent can **read** your
 ## 5. Use it day to day
 
 Just ask Claude Code, e.g.:
-- "tentacle: what's the GPU usage on the server right now?"
+- "luffy-arm: what's the GPU usage on the server right now?"
 - "read `/data/experiments/run42/metrics.json` from the server and summarize it"
 - "run `python train.py` on the server and tail the log"
 
@@ -177,7 +177,7 @@ and sync, so your local copy stays the source of truth.
 
 - **Read a new folder:**
   ```bash
-  bash ~/.claude/skills/tentacle/scripts/grant.sh ro /absolute/new/path
+  bash ~/.claude/skills/luffy-arm/scripts/grant.sh ro /absolute/new/path
   ```
   Prints server commands (with secret carve-out) to paste; then add the path to `READ_ROOTS`
   in your params. (Files added *under* an already-granted folder need nothing.)
@@ -191,8 +191,8 @@ and sync, so your local copy stays the source of truth.
 
 | Symptom | Fix |
 |---|---|
-| `Permission denied (publickey)` even though fingerprints match | The agent key has a passphrase. It must be passphrase-less: `rm ~/.ssh/tentacle_key*; bash …/keygen.sh`, then reinstall the new public key. |
-| Step 4.5 still asks for a password | Public key not installed right (redo 4.4), or key perms: `chmod 600 ~/.ssh/tentacle_key`. |
+| `Permission denied (publickey)` even though fingerprints match | The agent key has a passphrase. It must be passphrase-less: `rm ~/.ssh/luffy-arm-key*; bash …/keygen.sh`, then reinstall the new public key. |
+| Step 4.5 still asks for a password | Public key not installed right (redo 4.4), or key perms: `chmod 600 ~/.ssh/luffy-arm-key`. |
 | "read-only root can't read" | The `setfacl … -d` step (4.4 part 3) was missed; `getfacl <dir>` should show `user:cc:r-x`. |
 | "work dir write denied" | That path isn't in `WORK_DIRS`, or part 4 was skipped. |
 | `setfacl: command not found` on the server | `sudo apt-get install -y acl` (Debian/Ubuntu; use your distro's package elsewhere). |
@@ -200,7 +200,7 @@ and sync, so your local copy stays the source of truth.
 
 ---
 
-## 8. What tentacle can and can't do
+## 8. What luffy-arm can and can't do
 
 - ✅ **Can:** read your data, run commands, inspect logs, diagnose — on the server.
 - 🚫 **Can't (by design):** write outside `WORK_DIRS`, run `sudo`, touch your passwords, or
@@ -214,10 +214,10 @@ and sync, so your local copy stays the source of truth.
 
 **Local:**
 ```bash
-rm -rf ~/.claude/skills/tentacle
-rm -f ~/.ssh/tentacle_key ~/.ssh/tentacle_key.pub
+rm -rf ~/.claude/skills/luffy-arm
+rm -f ~/.ssh/luffy-arm-key ~/.ssh/luffy-arm-key.pub
 # remove the "Host mybox" block from ~/.ssh/config (open it in an editor)
-rm -rf ~/.config/tentacle
+rm -rf ~/.config/luffy-arm
 ```
 **Server (as yourself):**
 ```bash

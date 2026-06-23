@@ -1,17 +1,17 @@
-# tentacle — security model
+# luffy-arm — security model
 
-tentacle gives a **local** AI agent a **remote hand**: the agent's brain (process,
-config, memory) never leaves your machine; only an SSH "tentacle" reaches into the
+luffy-arm gives a **local** AI agent a **remote hand**: the agent's brain (process,
+config, memory) never leaves your machine; only an SSH "arm" reaches into the
 server to **read, run, and diagnose**. This file explains exactly what protects you.
 
 ## The metaphor → the rules
 
-A tentacle reaches out from a body that stays put. So:
+A rubber arm stretches out from a body that stays put. So:
 
 - The **body/brain stays home** — we never move the agent or its config to the server.
-- The tentacle has **read-only suckers by default** — it can feel around (read) and
+- The luffy-arm has **a read-only touch by default** — it can feel around (read) and
   grasp tools (run commands), but it does **not** rewrite what it touches.
-- A **nerve gate** (the sudo password) stops it from triggering system-level changes.
+- A **reach limit** (the sudo password) stops it from triggering system-level changes.
 
 ## Three invariants
 

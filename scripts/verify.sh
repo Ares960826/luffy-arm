@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 💻 LOCAL: end-to-end check of the channel + the safety nets (probes the server via ssh).
 set -uo pipefail
-PARAMS="${TENTACLE_PARAMS:-$HOME/.config/tentacle/params.sh}"
+PARAMS="${LUFFY_ARM_PARAMS:-$HOME/.config/luffy-arm/params.sh}"
 [[ -f "$PARAMS" ]] || { echo "Missing params: $PARAMS — copy scripts/params.example.sh there first."; exit 1; }
 source "$PARAMS"
 H="$HOST_ALIAS"
@@ -15,12 +15,12 @@ check "ControlMaster active" "ssh -O check $H 2>&1 | grep -q 'Master running'"
 # 2. Read-only roots: readable, but writes are denied (Net 2: data read-only)
 for d in "${READ_ROOTS[@]}"; do
   check "read-only root readable: $d" "ssh $H 'ls \"$d\" >/dev/null 2>&1'"
-  check "read-only root write denied: $d" "! ssh $H 'touch \"$d/._tentacle_probe\" 2>/dev/null'"
+  check "read-only root write denied: $d" "! ssh $H 'touch \"$d/._luffyarm_probe\" 2>/dev/null'"
 done
 
 # 3. Writable work dirs (version control is per-project, not checked here)
 for d in "${WORK_DIRS[@]}"; do
-  check "work dir writable: $d" "ssh $H 'touch \"$d/._tentacle_probe\" && rm -f \"$d/._tentacle_probe\"'"
+  check "work dir writable: $d" "ssh $H 'touch \"$d/._luffyarm_probe\" && rm -f \"$d/._luffyarm_probe\"'"
 done
 
 # 4. sudo password gate: non-interactive sudo must fail (Net 1)
