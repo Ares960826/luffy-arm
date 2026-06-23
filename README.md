@@ -1,4 +1,8 @@
-# 🦾 Luffy's Arm
+<p align="center">
+  <img src="assets/logo.png" alt="Luffy's Arm — the brain stays local, an SSH arm reaches into the remote server" width="320">
+</p>
+
+<h1 align="center">🦾 Luffy's Arm</h1>
 
 **Give a *local* AI coding agent a remote hand.** The agent's brain — its process,
 config, and memory — stays on your machine; only a single SSH "arm" reaches into a
