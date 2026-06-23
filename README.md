@@ -55,17 +55,22 @@ it hands you the exact commands; you run them. (See the invariants in the securi
 
 ## Install
 
-**As a Claude Code skill** — drop this repo into your skills dir so the agent
-auto-discovers it:
+**As an Agent Skill** — drop this repo into your agent's skills dir so it auto-discovers
+the skill:
 ```bash
+# Claude Code · Cursor · OpenCode (all read ~/.claude/skills/):
 git clone https://github.com/Ares960826/luffy-arm ~/.claude/skills/luffy-arm
+
+# Codex (reads ~/.agents/skills/ or ~/.codex/skills/ — NOT ~/.claude):
+git clone https://github.com/Ares960826/luffy-arm ~/.agents/skills/luffy-arm
 ```
-Then just tell Claude Code what you want — e.g. *"set up luffy-arm to my GPU box"* or
+Then just tell your agent what you want — e.g. *"set up luffy-arm to my GPU box"* or
 *"use luffy-arm to poke around my server"* — and it follows [`SKILL.md`](SKILL.md).
 First time? The friendly end-to-end walkthrough is [`TUTORIAL.md`](TUTORIAL.md).
 
 **Via the toolkit:** it's also referenced from
-[`ares-agent-toolkit`](https://github.com/Ares960826/ares-agent-toolkit) as a submodule.
+[`ares-agent-toolkit`](https://github.com/Ares960826/ares-agent-toolkit) as a submodule —
+its installer writes the skill into both `~/.claude/skills/` and `~/.agents/skills/`.
 
 ## Quick start
 

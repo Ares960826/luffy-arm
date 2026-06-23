@@ -70,12 +70,21 @@ them out for you to paste. That boundary is the point.
 
 ## 2. Install luffy-arm
 
+Drop the skill into your agent's skills directory:
 ```bash
+# Claude Code · Cursor · OpenCode (all read ~/.claude/skills/):
 git clone https://github.com/Ares960826/luffy-arm ~/.claude/skills/luffy-arm
+
+# Codex (reads ~/.agents/skills/, not ~/.claude):
+git clone https://github.com/Ares960826/luffy-arm ~/.agents/skills/luffy-arm
 ```
 
-Claude Code auto-discovers skills in `~/.claude/skills/`. Next time you mention reaching a
+Your agent auto-discovers skills in that directory. Next time you mention reaching a
 remote server, the `luffy-arm` skill kicks in.
+
+> **Heads-up:** the commands in §4 below use the `~/.claude/skills/luffy-arm` path. If you
+> installed elsewhere (e.g. Codex's `~/.agents/skills/luffy-arm`), substitute that path —
+> or just `cd` into the skill's directory and run `bash scripts/<name>.sh`.
 
 ---
 
