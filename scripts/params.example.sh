@@ -44,5 +44,12 @@ export READ_EXCLUDES=(
   ".huggingface" ".cache/huggingface" ".kaggle" ".jupyter"
 )
 
-# NOTE: "full-power mode" (logging in as ADMIN_USER for full read/write) is intentionally
-# NOT part of v1. It ships in a later version once verified. See references/security-model.md.
+# --- full-power mode (OPT-IN; OFF by default) ---
+# Lets the agent log in as ADMIN_USER (you) for FULL read/write — the two data nets (read-only
+# + no-edit-source) are deliberately lifted; the sudo gate, your local copy, and INV-3 (never
+# touch a password) still hold. Controlled by a passphrase-protected admin key loaded into
+# ssh-agent; toggle with scripts/fullpower.sh on|off|status. Leave these as-is if you don't
+# want full-power. Full reasoning: references/security-model.md.
+export ADMIN_KEY="$HOME/.ssh/luffy-arm-admin-key"   # admin key — HAS a passphrase (logs in as ADMIN_USER)
+export ADMIN_ALIAS="${HOST_ALIAS}-admin"            # ssh alias used for full-power mode
+export FULLPOWER_TTL="3600"                          # seconds before full-power auto-disables (default 1h)

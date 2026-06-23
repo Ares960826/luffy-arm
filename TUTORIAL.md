@@ -212,10 +212,14 @@ and sync, so your local copy stays the source of truth.
 ## 8. What luffy-arm can and can't do
 
 - ✅ **Can:** read your data, run commands, inspect logs, diagnose — on the server.
-- 🚫 **Can't (by design):** write outside `WORK_DIRS`, run `sudo`, touch your passwords, or
-  move itself / its config onto the server.
-- 🔭 **Later (v2):** opt-in *full-power mode* — log in as yourself for full read/write, gated
-  by a passphrase you type. Not in this version.
+- 🚫 **Can't in safe mode (by design):** write outside `WORK_DIRS`, run `sudo`, touch your
+  passwords, or move itself / its config onto the server.
+- 🔓 **Full-power mode (opt-in, off by default):** when you *want* the agent to read/write as
+  yourself, run `bash scripts/admin-keygen.sh` (makes a passphrase-protected key), install its
+  pubkey under your own account (server-setup §5 — or `ssh-copy-id`), then
+  `bash scripts/fullpower.sh on` (you type the passphrase) and check with
+  `bash scripts/verify-fullpower.sh`. It auto-disables after ~1h; `fullpower.sh off` ends it
+  now. You always type the passphrase — the agent never holds it (INV-3).
 
 ---
 

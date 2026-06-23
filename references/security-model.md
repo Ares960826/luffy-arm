@@ -21,8 +21,10 @@ A rubber arm stretches out from a body that stays put. So:
 | INV-2 | **Local is the source of truth** | On the server the agent only **reads / runs / diagnoses**. It does **not** edit remote source files. Edit locally, then sync. |
 | INV-3 | **The agent never touches a password** | Login is by SSH key. `sudo` and every server-root action use a password **you** type. The agent never holds, embeds, or asks for a password or key passphrase. |
 
-> Full-power mode (the agent logs in as your own account for full read/write) is an
-> *opt-in* exception to INV-2 — **not part of v1.** It ships later, once verified.
+> **Full-power mode (opt-in, off by default)** lets the agent log in as your own account for
+> full read/write — a deliberate exception that lifts INV-2 and the data-read-only net. It
+> stays gated by a passphrase you type (INV-3 holds) and auto-disables after a TTL; the sudo
+> gate and your local authoritative copy still apply. Details in "Full-power mode" below.
 
 ## Four safety nets (defense in depth)
 
@@ -61,8 +63,29 @@ four nets above). Don't rely on local hooks to police what runs on the server, a
 don't try to parse ssh command strings locally (evaluated and rejected as
 over-engineering).
 
-## Non-goals (v1)
+## Full-power mode (opt-in, off by default)
+
+Sometimes you *want* the agent to edit/write as yourself, not just read. Full-power mode does
+that as a deliberate, narrow exception:
+
+- **How it works:** a *separate* admin key **with a passphrase** logs you in as `ADMIN_USER`
+  (you). `scripts/fullpower.sh on` loads it into ssh-agent — **you type the passphrase**
+  (INV-3 holds) — and `off` removes it. The admin ssh alias authenticates *only* while the key
+  is loaded (its `IdentityFile` is the public key, so it's usable solely via the agent), and
+  the key auto-expires after `FULLPOWER_TTL` (default 1h).
+- **What it lifts:** the *data read-only* net and INV-2 (no editing remote source) — you now
+  have full read/write as yourself.
+- **What still holds:** the **sudo password gate** (root still needs your password), your
+  **local authoritative copy**, **INV-3** (passphrase + sudo password are typed by you, never
+  the agent), and **INV-1** (the brain stays local).
+- **Enable:** `admin-keygen.sh` (make the passphrased key) → install its pubkey under your own
+  account (server-setup.md step 5) → `fullpower.sh on` → `verify-fullpower.sh`. Close with
+  `fullpower.sh off`.
+- **Not for** multi-tenant / low-trust boxes — same caveat as the read model above.
+
+## Non-goals
 
 - Not a multi-tenant / hostile-server hardening kit.
 - Not a secrets manager.
-- Full-power (read/write as yourself) is deferred to a later version.
+- Full-power (read/write as yourself) is **opt-in and off by default** (see above) — enable it
+  deliberately, and not on multi-tenant/hostile boxes.
