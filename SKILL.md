@@ -22,8 +22,9 @@ Not for: purely local tasks; running the agent itself on the server; cloud/remot
 
 ## Invariants you MUST hold
 
-**Violating the letter of these is violating the spirit.** They hold in default (safe)
-mode; full-power mode is a separate opt-in that does not exist in this version.
+**Violating the letter of these is violating the spirit.** They hold in **safe mode** (the
+default). **Full-power mode** is a separate opt-in (see below) that deliberately lifts INV-2
+and the data-read-only net — but INV-1 and INV-3 still hold even there.
 
 - **INV-1 — brain stays local.** Never install the agent on the server or copy your agent's
   config dir (`~/.claude`, `~/.codex`, `~/.cursor`, `~/.config/opencode` — it holds
@@ -85,6 +86,21 @@ skill's directory. The complete human walkthrough is `TUTORIAL.md` — point the
 
 Human walkthrough: `TUTORIAL.md`. Quick steps: `references/setup-guide.md`. Why it's safe:
 `references/security-model.md`.
+
+## Full-power mode (opt-in — only when the user wants write-as-themselves)
+
+Default is safe mode (read-only `cc`). If the user **explicitly** wants the agent to
+edit/write **as themselves**, full-power mode is available — treat it as a loaded gun:
+
+- **The user enables it, not you.** They run `bash scripts/fullpower.sh on` and type the admin
+  key **passphrase** — you never see, ask for, or embed it (INV-3). One-time setup first:
+  `bash scripts/admin-keygen.sh`, then install the admin pubkey under the user's own account
+  (`references/server-setup.md` step 5; `ssh-copy-id` works too).
+- **Use it:** while ON, `ssh <ADMIN_ALIAS> "<cmd>"` runs as the user with full read/write.
+  Confirm with `bash scripts/verify-fullpower.sh`.
+- **It lifts** the data-read-only net + INV-2 (you may now edit remote files). **Still holds:**
+  INV-1 (brain local), INV-3 (passphrase/sudo are the user's), and the sudo password gate.
+- **Close it when done:** `bash scripts/fullpower.sh off` (it also auto-expires after the TTL).
 
 ## Common mistakes
 - Agent key has a passphrase → non-interactive login fails. It **must** be passphrase-less.

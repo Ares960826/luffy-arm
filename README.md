@@ -96,15 +96,18 @@ Full hand-holding walkthrough: [`TUTORIAL.md`](TUTORIAL.md).
 ```
 TUTORIAL.md               # full human walkthrough — start here if you're new
 SKILL.md                  # agent playbook (read first if you're an AI agent)
-scripts/                  # keygen.sh · ssh-config.sh · verify.sh · grant.sh · params.example.sh
+scripts/                  # safe mode:  keygen.sh · ssh-config.sh · verify.sh · grant.sh · params.example.sh
+                          # full-power: admin-keygen.sh · fullpower.sh · verify-fullpower.sh
 references/               # setup-guide.md · server-setup.md · security-model.md
 ```
 
 ## Scope
 
-- **v1 (this release):** safe mode — `cc` reads your data, writes only in `WORK_DIRS`.
-- **v2 (planned):** opt-in *full-power mode* (log in as yourself for full read/write,
-  passphrase-gated) — shipping once verified in real use.
+- **Safe mode (default):** `cc` reads your data, writes only in `WORK_DIRS`.
+- **Full-power mode (opt-in, off by default):** log in as yourself for full read/write,
+  controlled by a passphrase-protected key that auto-expires after a TTL. Enable with
+  `admin-keygen.sh` → `fullpower.sh on`, verify with `verify-fullpower.sh`. You always type
+  the passphrase (INV-3). Reasoning: [`references/security-model.md`](references/security-model.md).
 
 ## License
 
