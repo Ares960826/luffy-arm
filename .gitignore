@@ -1,0 +1,16 @@
+# Per-user runtime state — NEVER commit
+params.sh
+*.local.sh
+
+# Private keys / secrets (defensive; keys live in ~/.ssh, not here)
+*_key
+*_key.pub
+id_ed25519*
+id_rsa*
+*.pem
+.netrc
+
+# OS / editor cruft
+.DS_Store
+*.swp
+*~
