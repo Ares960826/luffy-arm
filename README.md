@@ -1,11 +1,11 @@
-# 🐙 tentacle
+# 🦾 Luffy's Arm
 
 **Give a *local* AI coding agent a remote hand.** The agent's brain — its process,
-config, and memory — stays on your machine; only a single SSH "tentacle" reaches into a
+config, and memory — stays on your machine; only a single SSH "arm" reaches into a
 remote Linux server to **read, run, and diagnose**, behind tiered safety.
 
 > It's the **inverse** of cloud dev / remote-control tools. Those move the compute to the
-> server and have you steer a remote agent. tentacle keeps the agent **home** and lets it
+> server and have you steer a remote agent. luffy-arm keeps the agent **home** and lets it
 > reach out — reverse Remote-SSH: *brain local, hand remote.*
 
 Built entirely from **native parts** (SSH keys, `~/.ssh/config`, ControlMaster, POSIX
@@ -20,17 +20,17 @@ ACLs, ssh-agent). No daemon, no custom protocol, nothing to trust beyond OpenSSH
 
 You write code locally and your data/compute live on a server. You want the agent to go
 *look* at the data and *run* things there — without shipping your brain, memory, or
-credentials to a shared box. tentacle is that channel, with guardrails.
+credentials to a shared box. luffy-arm is that channel, with guardrails.
 
 ## How it works
 
 ```
 ┌─────────────── 💻 LOCAL ───────────────┐        ┌──────── 🖥 SERVER ────────┐
 │  Claude Code  (brain / memory / config) │  ssh   │  cc  = non-priv account   │
-│  ~/.ssh/tentacle_key  ──────────────────┼───────▶│  read-only on your data   │
+│  ~/.ssh/luffy-arm-key  ──────────────────┼───────▶│  read-only on your data   │
 │  ~/.ssh/config  (Host alias, reuse)     │        │  write only in WORK_DIRS  │
 └─────────────────────────────────────────┘        └───────────────────────────┘
-        brain stays here, always                    the tentacle reaches in
+        brain stays here, always                    the arm reaches in
 ```
 
 **Tiered safety** (details in [`references/security-model.md`](references/security-model.md)):
@@ -54,10 +54,10 @@ it hands you the exact commands; you run them. (See the invariants in the securi
 **As a Claude Code skill** — drop this repo into your skills dir so the agent
 auto-discovers it:
 ```bash
-git clone https://github.com/Ares960826/tentacle ~/.claude/skills/tentacle
+git clone https://github.com/Ares960826/luffy-arm ~/.claude/skills/luffy-arm
 ```
-Then just tell Claude Code what you want — e.g. *"set up tentacle to my GPU box"* or
-*"use tentacle to poke around my server"* — and it follows [`SKILL.md`](SKILL.md).
+Then just tell Claude Code what you want — e.g. *"set up luffy-arm to my GPU box"* or
+*"use luffy-arm to poke around my server"* — and it follows [`SKILL.md`](SKILL.md).
 First time? The friendly end-to-end walkthrough is [`TUTORIAL.md`](TUTORIAL.md).
 
 **Via the toolkit:** it's also referenced from
@@ -67,8 +67,8 @@ First time? The friendly end-to-end walkthrough is [`TUTORIAL.md`](TUTORIAL.md).
 
 ```bash
 # 1. fill in your params (kept OUTSIDE the repo)
-mkdir -p ~/.config/tentacle && cp scripts/params.example.sh ~/.config/tentacle/params.sh
-$EDITOR ~/.config/tentacle/params.sh
+mkdir -p ~/.config/luffy-arm && cp scripts/params.example.sh ~/.config/luffy-arm/params.sh
+$EDITOR ~/.config/luffy-arm/params.sh
 
 # 2. local: make the key + ssh config
 bash scripts/keygen.sh        # prints the public key

@@ -3,7 +3,7 @@
 # (v1 = safe / read-only mode only. The full-power admin alias arrives in a later version.)
 # This edits ~/.ssh/config — run it only AFTER the user authorizes it.
 set -euo pipefail
-PARAMS="${TENTACLE_PARAMS:-$HOME/.config/tentacle/params.sh}"
+PARAMS="${LUFFY_ARM_PARAMS:-$HOME/.config/luffy-arm/params.sh}"
 [[ -f "$PARAMS" ]] || { echo "Missing params: $PARAMS — copy scripts/params.example.sh there and fill it in."; exit 1; }
 source "$PARAMS"
 mkdir -p ~/.ssh && chmod 700 ~/.ssh

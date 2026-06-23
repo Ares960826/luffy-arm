@@ -1,4 +1,4 @@
-# tentacle — setup guide (first-time, step by step)
+# luffy-arm — setup guide (first-time, step by step)
 
 > Hand-holding guide; assumes no Linux-admin background. Every command is marked
 > **💻 LOCAL** (your machine) or **🖥 SERVER** (the remote box). Values in `<ANGLE>`
@@ -23,7 +23,7 @@ owner key; `cc` is a restricted guest key we give **read-only** on your data and
 - [ ] Server IP/host + SSH port (default 22)
 - [ ] Your own account on the server, and it can `sudo`
 - [ ] Server is Linux with ACL support (ext4/xfs have it; step 3 checks)
-- [ ] You filled in `~/.config/tentacle/params.sh` (copy from `scripts/params.example.sh`)
+- [ ] You filled in `~/.config/luffy-arm/params.sh` (copy from `scripts/params.example.sh`)
 
 ---
 
@@ -31,7 +31,7 @@ owner key; `cc` is a restricted guest key we give **read-only** on your data and
 
 ## Step 1 — confirm params
 
-Open `~/.config/tentacle/params.sh` and check `SERVER`, `CC_USER` (default `cc`),
+Open `~/.config/luffy-arm/params.sh` and check `SERVER`, `CC_USER` (default `cc`),
 `ADMIN_USER`, `HOST_ALIAS`, `READ_ROOTS`, `WORK_DIRS`. Add/change paths by editing the
 arrays (one per line). All scripts pick the changes up automatically.
 
