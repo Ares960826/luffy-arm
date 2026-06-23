@@ -64,17 +64,25 @@ Source edits happen **locally**; sync up only into `WORK_DIRS` when needed.
 
 ## INSTALL mode (set the channel up)
 
-Run scripts from this skill's directory.
+Treat the user as a first-timer — **assume nothing is configured.** Run scripts from this
+skill's directory. The complete human walkthrough is `TUTORIAL.md` — point them to it.
 
-1. **Params:** ensure `~/.config/tentacle/params.sh` exists (copy `scripts/params.example.sh`);
-   fill SERVER, ADMIN_USER, HOST_ALIAS, READ_ROOTS, WORK_DIRS.
-2. **Local — ask first:** `keygen.sh` and `ssh-config.sh` touch `~/.ssh`, so **ask the user
-   to authorize**, then run `bash scripts/keygen.sh` and `bash scripts/ssh-config.sh`.
-3. **Server — the USER runs it:** hand the user the filled-in commands from
-   `references/server-setup.md` (create `cc`, install the pubkey, set ACLs). Do **not** run these.
-4. **Verify:** `bash scripts/verify.sh` → expect `🎉 all passed`.
+1. **Reachability first.** Confirm the user can already `ssh <their-user>@<server>` (or has
+   an account they can get). If they can't reach the server at all, help with that before
+   anything else — don't proceed without it.
+2. **Params — gather by asking, then write the file.** Ask for: server IP/host, their server
+   username, an alias nickname, which dirs to read, which (if any) to write. **Write those
+   into `~/.config/tentacle/params.sh` yourself** (template: `scripts/params.example.sh`).
+   Don't make the user hand-edit unless they prefer to.
+3. **Local — ask permission first** (these touch `~/.ssh`): run `bash scripts/keygen.sh`
+   (prints the public key) then `bash scripts/ssh-config.sh`.
+4. **Server — the USER runs it (you must NOT):** present the filled-in commands from
+   `references/server-setup.md` (create `cc`, paste the pubkey, set ACLs); they run them on
+   the server with their own sudo.
+5. **Verify:** `bash scripts/verify.sh` → expect `🎉 all passed`.
 
-Full walkthrough: `references/setup-guide.md`. Why it's safe: `references/security-model.md`.
+Human walkthrough: `TUTORIAL.md`. Quick steps: `references/setup-guide.md`. Why it's safe:
+`references/security-model.md`.
 
 ## Common mistakes
 - Agent key has a passphrase → non-interactive login fails. It **must** be passphrase-less.
