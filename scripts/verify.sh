@@ -26,8 +26,8 @@ done
 # 4. sudo password gate: non-interactive sudo must fail (Net 1)
 check "sudo without password denied (gate)" "! ssh $H 'sudo -n true 2>/dev/null'"
 
-# 5. Local brain: agent config stays local (INV-1)
-check "local brain (~/.claude) present" 'test -d "$HOME/.claude"'
+# 5. Local brain: agent config stays local (INV-1) — any skills-aware agent counts
+check "local brain present (agent config dir)" 'test -d "$HOME/.claude" || test -d "$HOME/.codex" || test -d "$HOME/.cursor" || test -d "$HOME/.config/opencode"'
 
 echo "----"; echo "passed $pass / failed $fail"
 [[ $fail -eq 0 ]] && echo "🎉 all passed" || { echo "see ❌ above; consult references/setup-guide.md"; exit 1; }

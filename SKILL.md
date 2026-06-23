@@ -25,8 +25,9 @@ Not for: purely local tasks; running the agent itself on the server; cloud/remot
 **Violating the letter of these is violating the spirit.** They hold in default (safe)
 mode; full-power mode is a separate opt-in that does not exist in this version.
 
-- **INV-1 — brain stays local.** Never install the agent on the server or copy `~/.claude`
-  (it holds credentials + MCP secrets) there. Fix lag with ControlMaster, not by moving.
+- **INV-1 — brain stays local.** Never install the agent on the server or copy your agent's
+  config dir (`~/.claude`, `~/.codex`, `~/.cursor`, `~/.config/opencode` — it holds
+  credentials + MCP secrets) there. Fix lag with ControlMaster, not by moving.
 - **INV-2 — local is the source of truth.** Over the channel you **read / run / diagnose
   only.** Do **not** edit remote source files (no `sed -i`, `vim`, `tee`, `>` on a remote
   path). Fix locally, then sync.
@@ -42,12 +43,13 @@ mode; full-power mode is a separate opt-in that does not exist in this version.
 | "Just hotfix the file directly over ssh, no reason to re-upload" | That's editing remote source (INV-2). Edit locally + sync; the server copy is not authoritative. |
 | "We're in a hurry / it's only one line" | Urgency doesn't change which copy is the truth. Still local-then-sync. |
 | "I have ssh+sudo, I'll just run adduser/setfacl myself" | Server-root is the user's, gated by their password (INV-3). Print the commands; let them run them. |
-| "Copy ~/.claude up so it behaves the same on the server" | Leaks credentials + breaks INV-1. Use ControlMaster for speed instead. |
+| "Copy my agent's config dir (`~/.claude`/`~/.codex`/…) up so it behaves the same on the server" | Leaks credentials + breaks INV-1. Use ControlMaster for speed instead. |
 | "Embed the password/passphrase so it runs unattended" | Never (INV-3). Use a passphrase-less dedicated key + the user's interactive sudo. |
 
 **Red flags — STOP:** about to run `sed -i` / `vim` / `tee` / `>` on a remote path · about
 to `sudo` (or `ssh "... sudo ..."`) for adduser/setfacl/authorized_keys · about to `scp`
-`~/.claude` or install the agent on the server · about to put a secret in a command.
+your agent's config dir (`~/.claude`/`~/.codex`/…) or install the agent on the server ·
+about to put a secret in a command.
 
 ## USE mode (channel exists)
 

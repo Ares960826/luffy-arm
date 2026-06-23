@@ -17,7 +17,7 @@ A rubber arm stretches out from a body that stays put. So:
 
 | # | Invariant | Meaning |
 |---|-----------|---------|
-| INV-1 | **Brain stays local** | Never copy the agent / its `~/.claude` config / memory to the server. (`~/.claude` holds credentials + MCP secrets — moving it leaks them.) |
+| INV-1 | **Brain stays local** | Never copy the agent / its config dir (`~/.claude`, `~/.codex`, `~/.cursor`, `~/.config/opencode`) / memory to the server. (That dir holds credentials + MCP secrets — moving it leaks them.) |
 | INV-2 | **Local is the source of truth** | On the server the agent only **reads / runs / diagnoses**. It does **not** edit remote source files. Edit locally, then sync. |
 | INV-3 | **The agent never touches a password** | Login is by SSH key. `sudo` and every server-root action use a password **you** type. The agent never holds, embeds, or asks for a password or key passphrase. |
 
