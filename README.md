@@ -28,14 +28,9 @@ credentials to a shared box. luffy-arm is that channel, with guardrails.
 
 ## How it works
 
-```
-┌─────────────── 💻 LOCAL ───────────────┐        ┌──────── 🖥 SERVER ────────┐
-│  Claude Code  (brain / memory / config) │  ssh   │  cc  = non-priv account   │
-│  ~/.ssh/luffy-arm-key  ──────────────────┼───────▶│  read-only on your data   │
-│  ~/.ssh/config  (Host alias, reuse)     │        │  write only in WORK_DIRS  │
-└─────────────────────────────────────────┘        └───────────────────────────┘
-        brain stays here, always                    the arm reaches in
-```
+<p align="center">
+  <img src="assets/architecture.png" alt="luffy-arm architecture — a local AI agent (brain, memory, config dir, keys) reaches over an SSH 'arm' into a remote Linux server: safe mode (cc, non-privileged, read-only roots + writable WORK_DIRS, secrets excluded) and opt-in full-power mode (ADMIN_USER via a separate passphrase-gated key, full read/write, TTL auto-off), behind tiered safety" width="840">
+</p>
 
 **Tiered safety** (details in [`references/security-model.md`](references/security-model.md)):
 
