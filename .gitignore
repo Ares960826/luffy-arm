@@ -14,3 +14,7 @@ id_rsa*
 .DS_Store
 *.swp
 *~
+
+# Agent runtime state + stray generated images (must never land in the published skill)
+.omc/
+ChatGPT Image*

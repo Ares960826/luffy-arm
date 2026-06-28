@@ -102,11 +102,16 @@ step (or do it without the agent)? The manual path below is the exact same thing
 
 ## 4. The manual path, step by step
 
+> The commands below run **from the skill's directory**, so `cd` into it once:
+> ```bash
+> cd ~/.claude/skills/luffy-arm        # Codex: cd ~/.agents/skills/luffy-arm
+> ```
+
 ### 4.1 — Tell luffy-arm about your server
 
 ```bash
 mkdir -p ~/.config/luffy-arm
-cp ~/.claude/skills/luffy-arm/scripts/params.example.sh ~/.config/luffy-arm/params.sh
+cp scripts/params.example.sh ~/.config/luffy-arm/params.sh
 ${EDITOR:-nano} ~/.config/luffy-arm/params.sh
 ```
 Fill these (the rest can stay default):
@@ -122,7 +127,7 @@ export WORK_DIRS=( )                       # what it may WRITE (empty = fully re
 ### 4.2 — Make the agent's key (💻 LOCAL)
 
 ```bash
-bash ~/.claude/skills/luffy-arm/scripts/keygen.sh
+bash scripts/keygen.sh
 ```
 Creates `~/.ssh/luffy-arm-key` (passphrase-less, so the agent can log in automatically) and
 prints a line starting `ssh-ed25519 AAAA…`. **Copy that whole line** — it's the *public* key
@@ -131,7 +136,7 @@ you install on the server next.
 ### 4.3 — Name the connection (💻 LOCAL)
 
 ```bash
-bash ~/.claude/skills/luffy-arm/scripts/ssh-config.sh
+bash scripts/ssh-config.sh
 ```
 Adds a short block to `~/.ssh/config` so you can type `ssh mybox`, and reuses one connection
 for speed.
@@ -156,7 +161,7 @@ you copied, **(3)** grant `cc` read-only on your `READ_ROOTS` and carve out your
 ### 4.5 — Verify (💻 LOCAL)
 
 ```bash
-bash ~/.claude/skills/luffy-arm/scripts/verify.sh
+bash scripts/verify.sh
 ```
 Expected ending:
 ```
@@ -186,7 +191,7 @@ and sync, so your local copy stays the source of truth.
 
 - **Read a new folder:**
   ```bash
-  bash ~/.claude/skills/luffy-arm/scripts/grant.sh ro /absolute/new/path
+  bash scripts/grant.sh ro /absolute/new/path     # from the skill dir (cd there, see §4)
   ```
   Prints server commands (with secret carve-out) to paste; then add the path to `READ_ROOTS`
   in your params. (Files added *under* an already-granted folder need nothing.)
@@ -227,7 +232,7 @@ and sync, so your local copy stays the source of truth.
 
 **Local:**
 ```bash
-rm -rf ~/.claude/skills/luffy-arm
+rm -rf ~/.claude/skills/luffy-arm        # Codex: ~/.agents/skills/luffy-arm
 rm -f ~/.ssh/luffy-arm-key ~/.ssh/luffy-arm-key.pub
 # remove the "Host mybox" block from ~/.ssh/config (open it in an editor)
 rm -rf ~/.config/luffy-arm
