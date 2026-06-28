@@ -50,22 +50,34 @@ it hands you the exact commands; you run them. (See the invariants in the securi
 
 ## Install
 
-**As an Agent Skill** — drop this repo into your agent's skills dir so it auto-discovers
-the skill:
+**One command — auto-detects your agent(s)** and installs into the right skills dir for each
+AI coding agent it finds (Claude Code, Codex, Cursor, OpenCode):
+```bash
+curl -fsSL https://raw.githubusercontent.com/Ares960826/luffy-arm/main/install.sh | bash
+```
+From a clone instead: `git clone https://github.com/Ares960826/luffy-arm && bash luffy-arm/install.sh`
+
+<details><summary><b>Manual install</b> (clone straight into your agent's skills dir)</summary>
+
 ```bash
 # Claude Code · Cursor · OpenCode (all read ~/.claude/skills/):
 git clone https://github.com/Ares960826/luffy-arm ~/.claude/skills/luffy-arm
 
-# Codex (reads ~/.agents/skills/ or ~/.codex/skills/ — NOT ~/.claude):
+# Codex (reads ~/.agents/skills/ — NOT ~/.claude):
 git clone https://github.com/Ares960826/luffy-arm ~/.agents/skills/luffy-arm
 ```
+</details>
+
 Then just tell your agent what you want — e.g. *"set up luffy-arm to my GPU box"* or
 *"use luffy-arm to poke around my server"* — and it follows [`SKILL.md`](SKILL.md).
 First time? The friendly end-to-end walkthrough is [`TUTORIAL.md`](TUTORIAL.md).
 
+> **Cursor note:** Cursor is a GUI/IDE, not a headless CLI. The skill installs and works inside
+> Cursor's agent chat, but each shell step goes through Cursor's command-approval UI — it can't
+> be driven unattended the way Codex/OpenCode can.
+
 **Via the toolkit:** it's also referenced from
-[`ares-agent-toolkit`](https://github.com/Ares960826/ares-agent-toolkit) as a submodule —
-its installer writes the skill into both `~/.claude/skills/` and `~/.agents/skills/`.
+[`ares-agent-toolkit`](https://github.com/Ares960826/ares-agent-toolkit) as a submodule.
 
 ## Quick start
 
