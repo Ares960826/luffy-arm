@@ -70,7 +70,13 @@ them out for you to paste. That boundary is the point.
 
 ## 2. Install luffy-arm
 
-Drop the skill into your agent's skills directory:
+**Easiest — one command** (auto-detects your agent and installs to the right place):
+```bash
+curl -fsSL https://raw.githubusercontent.com/Ares960826/luffy-arm/main/install.sh | bash
+```
+
+<details><summary>Or install manually into your agent's skills directory</summary>
+
 ```bash
 # Claude Code · Cursor · OpenCode (all read ~/.claude/skills/):
 git clone https://github.com/Ares960826/luffy-arm ~/.claude/skills/luffy-arm
@@ -78,6 +84,7 @@ git clone https://github.com/Ares960826/luffy-arm ~/.claude/skills/luffy-arm
 # Codex (reads ~/.agents/skills/, not ~/.claude):
 git clone https://github.com/Ares960826/luffy-arm ~/.agents/skills/luffy-arm
 ```
+</details>
 
 Your agent auto-discovers skills in that directory. Next time you mention reaching a
 remote server, the `luffy-arm` skill kicks in.
@@ -184,6 +191,14 @@ Just ask Claude Code, e.g.:
 The agent reaches in over `ssh mybox "…"`. It's **read-only** everywhere except your
 `WORK_DIRS`, and it will **not** edit source files on the server — by design you edit locally
 and sync, so your local copy stays the source of truth.
+
+**Download data to your machine** — anything `cc` can read comes down over the same alias:
+```bash
+scp mybox:/data/run42/metrics.json ./                        # one file
+rsync -avz --partial --progress mybox:/data/run42/ ./run42/  # a directory (resumable, fast)
+```
+Or just ask the agent: *"download `/data/run42` from the server"*. Secrets in `READ_EXCLUDES`
+are unreadable, so they can't be pulled; uploads land only in `WORK_DIRS` (safe mode).
 
 ---
 

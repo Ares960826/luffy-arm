@@ -61,6 +61,7 @@ Reach in over the alias. Default is **read-only**; only `WORK_DIRS` are writable
 | run a command / explore | `ssh <alias> "<cmd>"` |
 | check the multiplexed connection | `ssh -O check <alias>` |
 | read a file | `ssh <alias> "cat <path>"` |
+| **download data → local** | `scp <alias>:<path> ./` · `rsync -avz <alias>:<dir>/ ./<dir>/` — anything `cc` can read (secrets in `READ_EXCLUDES` can't be pulled) |
 | grant a new read/write dir | `bash scripts/grant.sh ro\|rw <path>` → user runs the printed server cmds |
 
 Source edits happen **locally**; sync up only into `WORK_DIRS` when needed.

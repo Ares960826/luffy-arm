@@ -98,6 +98,19 @@ bash scripts/verify.sh        # → 🎉 all passed
 
 Full hand-holding walkthrough: [`TUTORIAL.md`](TUTORIAL.md).
 
+## Fetching data to your machine
+
+Pulling server data down to where the brain lives is a core use — anything `cc` can **read**
+(your `READ_ROOTS`, minus the `READ_EXCLUDES` secrets) comes down over the same host alias:
+```bash
+scp mybox:/data/run42/metrics.json ./                        # one file
+rsync -avz --partial --progress mybox:/data/run42/ ./run42/  # a directory (resumable)
+ssh mybox "tar czf - /data/run42" | tar xzf -                # stream a whole tree, no temp files
+```
+`scp`/`rsync` reuse the ControlMaster connection, so repeated transfers are fast. Traffic is
+**server → local** for anything readable — secrets can't be read, so they can't be pulled.
+Uploads (local → server) land only in `WORK_DIRS` in safe mode; full-power lifts that.
+
 ## Layout
 
 ```
