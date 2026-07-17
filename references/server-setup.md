@@ -35,10 +35,12 @@ for d in <READ_ROOT ...>; do
   sudo setfacl -R  -m u:<CC_USER>:rX "$d"
   sudo setfacl -R -d -m u:<CC_USER>:rX "$d"
 done
-# carve out secrets (THIS is the real protection — see security-model.md)
+# carve out secrets (THIS is the real protection — see security-model.md).
+# Use explicit DENY (u:cc:---), NOT -x: removing the grant lets cc fall back to the "other"
+# read bit, so -x fails to hide any world-readable secret dir. u:cc:--- overrides "other".
 for s in <EXCLUDE ...>; do
-  sudo setfacl -R  -x u:<CC_USER> "<READ_ROOT>/$s" 2>/dev/null || true
-  sudo setfacl -R -d -x u:<CC_USER> "<READ_ROOT>/$s" 2>/dev/null || true
+  sudo setfacl -R  -m u:<CC_USER>:--- "<READ_ROOT>/$s" 2>/dev/null || true
+  sudo setfacl -R -d -m u:<CC_USER>:--- "<READ_ROOT>/$s" 2>/dev/null || true
 done
 
 # === 4. Writable work dirs (optional) ===

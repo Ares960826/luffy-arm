@@ -92,8 +92,10 @@ for d in ${READ_ROOTS[@]+"${READ_ROOTS[@]}"}; do
   for s in ${READ_EXCLUDES[@]+"${READ_EXCLUDES[@]}"}; do
     [[ -e "$d/$s" ]] || continue
     echo "   carve out $d/$s"
-    sudo setfacl -R  -x u:"$CC_USER" "$d/$s" 2>/dev/null || true
-    sudo setfacl -R -d -x u:"$CC_USER" "$d/$s" 2>/dev/null || true
+    # EXPLICIT DENY, not -x (remove-grant): a removed grant falls back to the "other" bits, so
+    # -x fails to hide any world-readable secret dir (mode o+r). u:cc:--- overrides "other".
+    sudo setfacl -R  -m u:"$CC_USER":--- "$d/$s" 2>/dev/null || true
+    sudo setfacl -R -d -m u:"$CC_USER":--- "$d/$s" 2>/dev/null || true
   done
 done
 

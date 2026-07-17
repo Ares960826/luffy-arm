@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/version-v1.3.0-brightgreen.svg" alt="Version v1.3.0">
+  <img src="https://img.shields.io/badge/version-v1.6.0-brightgreen.svg" alt="Version v1.6.0">
   <a href="https://github.com/Ares960826/luffy-arm/actions/workflows/shellcheck.yml"><img src="https://github.com/Ares960826/luffy-arm/actions/workflows/shellcheck.yml/badge.svg" alt="shellcheck CI"></a>
 </p>
 
@@ -55,6 +55,10 @@ credentials to a shared box. luffy-arm is that channel, with guardrails.
 2. 👁 **data read-only (ACL)** — `cc` reads your `READ_ROOTS`; secrets are carved out.
 3. ♻ **per-project version control** — `WORK_DIRS` are writable; you snapshot per project.
 4. 🗄 **local authoritative copy** — your local source is the ground truth.
+
+Optional 📓 **command auditing** (off by default): a server-side `sshd` wrapper logs every
+command the agent runs as `cc` to the root-owned journal — *detect, not prevent*. Turn it
+on/off with `scripts/gen-audit-setup.sh` ([`references/audit-logging.md`](references/audit-logging.md)).
 
 ## Who does what
 
@@ -180,15 +184,37 @@ ssh mybox "tar czf - /data/run42" | tar xzf -                # stream a whole tr
 Secrets in `READ_EXCLUDES` can't be read, so they can't be pulled; uploads land only in
 `WORK_DIRS`.
 
+## The `luffy-arm` command (optional shortcut)
+
+`install.sh` also drops a `luffy-arm` command into `~/.local/bin` — a thin wrapper so you can
+type short subcommands instead of full script paths:
+
+```bash
+luffy-arm help                 # list everything
+luffy-arm verify               # safe-mode channel + safety-net check
+luffy-arm fullpower on|off     # opt-in write-as-yourself (you type the passphrase)
+luffy-arm audit-gen            # generate the opt-in server audit script
+luffy-arm setup | grant | update | …
+```
+
+It forwards to the same `scripts/*.sh` and **changes no behavior** — every passphrase and sudo
+prompt is exactly as before. It's a symlink, so it tracks updates; remove it with
+`rm ~/.local/bin/luffy-arm`. The installer also adds a shorter **`luffy`** alias (so `luffy
+verify` works too) — but only when no other `luffy` is already on your PATH, since an unrelated
+Homebrew CLI ships that name; if it's taken, the installer says so and you keep `luffy-arm`. The
+AI agent doesn't use this; it calls the scripts directly.
+
 ## Layout
 
 ```
 TUTORIAL.md               # full human walkthrough — start here if you're new
 SKILL.md                  # agent playbook (read first if you're an AI agent)
-scripts/                  # safe mode:  keygen.sh · ssh-config.sh · gen-server-setup.sh · verify.sh · grant.sh · params.example.sh
+scripts/                  # dispatcher: luffy-arm  (the `luffy-arm <cmd>` command)
+                          # safe mode:  keygen.sh · ssh-config.sh · gen-server-setup.sh · verify.sh · grant.sh · params.example.sh
                           # full-power: admin-keygen.sh · fullpower.sh · verify-fullpower.sh
+                          # auditing:   gen-audit-setup.sh  (opt-in command log)
                           # upkeep:     update.sh · check-update.sh
-references/               # setup-guide.md · server-setup.md · security-model.md
+references/               # setup-guide.md · server-setup.md · security-model.md · audit-logging.md
 ```
 
 ## Scope

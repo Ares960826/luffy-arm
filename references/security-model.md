@@ -33,6 +33,13 @@ A rubber arm stretches out from a body that stays put. So:
 4. **🗄 local authoritative copy** — your local source is the ground truth and the
    ultimate backup.
 
+**Optional fifth layer — 📓 command auditing (opt-in, off by default).** A server-side
+`sshd` `ForceCommand` wrapper (scoped to `cc` only) logs every `ssh <alias> "<cmd>"` into the
+root-owned system journal, so you have a tamper-evident record of what the agent ran. This is
+**detect, not prevent** — accountability on top of the four preventing nets, not a wall. Turn
+it on/off with `scripts/gen-audit-setup.sh`; full mechanism and honest limits in
+`references/audit-logging.md`.
+
 ## Why write-protection is basically free
 
 `cc` is a **different user** and is removed from any shared writable group (e.g.
@@ -50,13 +57,24 @@ entries**. On a single-user machine you trust the agent on, anything it reads on
 flows back to your own local agent — inside your trust boundary. For a multi-tenant
 or low-trust box this model is **not** sufficient; don't use it there.
 
+**How the carve-out is enforced (matters — a subtle trap).** Each `READ_EXCLUDES`
+entry is applied as an **explicit deny** — `setfacl -m u:cc:---` — not as a *removed
+grant* (`setfacl -x u:cc`). The difference bites on **world-readable** secret dirs
+(mode `o+r`, common for `.claude`, `.claude-mem`, `.agents`, …): merely removing cc's
+ACL entry lets it **fall back to the "other" read bit**, so `-x` silently fails to hide
+them. A named-user entry (`u:cc:---`) is checked **before** "other", so it denies cc
+even when everyone else can read. If you ever hand-write an exclusion, use `-m
+u:cc:---`, never `-x`.
+
 ## The unavoidable blind spot (important)
 
 No **local** guardrail can see inside `ssh server "…"` — the remote command is an
 opaque string to your machine. So **remote safety can only live server-side** (the
 four nets above). Don't rely on local hooks to police what runs on the server, and
 don't try to parse ssh command strings locally (evaluated and rejected as
-over-engineering).
+over-engineering). If you want *visibility* into that opaque string, the answer is
+also server-side: the opt-in command auditing above logs it where it becomes visible
+(on the server), never on your machine.
 
 ## Full-power mode (opt-in, off by default)
 

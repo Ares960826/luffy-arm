@@ -77,7 +77,37 @@ echo "Detected: ${AGENTS[*]}"
 echo "Installing →"
 for t in "${TARGETS[@]}"; do copy_into "$t"; done
 
-# --- 4. next steps ---
+# --- 4. optional: put the `luffy-arm` command on your PATH (human convenience only) ---
+# The AGENT never needs this — it calls scripts/*.sh directly. This is purely so a human can
+# type `luffy-arm fullpower on` instead of the full script path. It's a symlink to the installed
+# dispatcher, so updates track automatically; remove it any time with `rm ~/.local/bin/luffy-arm`.
+CMD_NOTE=""
+DISPATCH="${TARGETS[0]}/$SKILL_NAME/scripts/luffy-arm"
+if [[ -f "$DISPATCH" ]]; then
+  BINDIR="$HOME/.local/bin"
+  mkdir -p "$BINDIR"
+  if ln -sf "$DISPATCH" "$BINDIR/$SKILL_NAME" 2>/dev/null; then
+    chmod +x "$DISPATCH" 2>/dev/null || true
+    if [[ ":$PATH:" == *":$BINDIR:"* ]]; then
+      CMD_NOTE="  • \`$SKILL_NAME\` command ready → $BINDIR/$SKILL_NAME (on your PATH ✓). Try: $SKILL_NAME help"
+    else
+      CMD_NOTE="  • \`$SKILL_NAME\` command linked → $BINDIR/$SKILL_NAME — add ~/.local/bin to PATH to use it:
+       echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.zshrc   # or ~/.bashrc, then reopen the shell"
+    fi
+    # short alias `luffy` — convenience; only if no OTHER `luffy` already owns the name
+    # (a Homebrew movie CLI ships a `luffy` binary), so we never clobber someone else's tool.
+    SHORT="$BINDIR/luffy"; EXIST="$(command -v luffy 2>/dev/null || true)"
+    if [[ -z "$EXIST" || "$EXIST" == "$SHORT" ]]; then
+      ln -sf "$DISPATCH" "$SHORT" 2>/dev/null && CMD_NOTE="$CMD_NOTE
+  • short alias \`luffy\` → same command (e.g. \`luffy verify\`)."
+    else
+      CMD_NOTE="$CMD_NOTE
+  • \`luffy\` alias SKIPPED — another 'luffy' is already at $EXIST. Use \`$SKILL_NAME\`, or remove that and re-run."
+    fi
+  fi
+fi
+
+# --- 5. next steps ---
 cat <<EOF
 
 ✅ Installed. Next:
@@ -87,4 +117,7 @@ cat <<EOF
        \${EDITOR:-nano} ~/.config/$SKILL_NAME/params.sh
   2) Tell your agent, e.g.: "use $SKILL_NAME to set up access to my server"
      (or follow the walkthrough in $SKILL_NAME/TUTORIAL.md)
+${CMD_NOTE:+
+Optional human shortcut:
+$CMD_NOTE}
 EOF

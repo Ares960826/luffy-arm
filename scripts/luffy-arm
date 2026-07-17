@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# luffy-arm — unified command (thin dispatcher). HUMAN convenience only: it just forwards each
+# subcommand to the matching scripts/*.sh in this same dir. It adds NO logic of its own and
+# bypasses NO safety gate — `fullpower on` still makes YOU type the passphrase, `audit-gen`'s
+# output still needs your sudo on the server. The AGENT does not use this; it calls the
+# scripts/*.sh directly (PATH-independent, per SKILL.md).
+set -euo pipefail
+
+VERSION="1.6.0"
+
+# Resolve this script's real dir even when invoked via a symlink (e.g. ~/.local/bin/luffy-arm),
+# so the sibling scripts are found next to the real file, not next to the symlink.
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -h "$SOURCE" ]]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPTS="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+
+run(){ # forward to a sibling script, erroring clearly if it's missing
+  local s="$SCRIPTS/$1"; shift
+  [[ -f "$s" ]] || { echo "luffy-arm: missing $s (broken install?)" >&2; exit 1; }
+  exec bash "$s" "$@"
+}
+
+usage(){ cat <<'EOF'
+luffy-arm — give a local agent a remote hand over SSH (unified command)
+
+usage: luffy-arm <command> [args]
+
+  setup / channel:
+    keygen                 create the agent SSH key
+    ssh-config             write the ~/.ssh/config Host block(s)
+    setup                  generate the one-shot server-setup script (you run it on the server)
+    verify                 safe-mode channel + safety-net check
+    grant ro|rw <path>     print the server commands to grant a new read/write dir
+
+  full-power (opt-in; YOU type the passphrase — never the agent):
+    admin-keygen           create the passphrased admin key
+    fullpower on|off|status
+    verify-fullpower       full-power self-check
+
+  auditing (opt-in; enable/disable are run on the SERVER with your sudo):
+    audit-gen              generate the server audit script (has enable|disable|status|show)
+
+  upkeep:
+    update                 update luffy-arm in place
+    check-update           is a newer version published?
+    version | help
+EOF
+}
+
+cmd="${1:-help}"; shift 2>/dev/null || true
+case "$cmd" in
+  keygen)               run keygen.sh "$@" ;;
+  ssh-config)           run ssh-config.sh "$@" ;;
+  setup)                run gen-server-setup.sh "$@" ;;
+  verify)               run verify.sh "$@" ;;
+  grant)                run grant.sh "$@" ;;
+  admin-keygen)         run admin-keygen.sh "$@" ;;
+  fullpower)            run fullpower.sh "$@" ;;
+  verify-fullpower)     run verify-fullpower.sh "$@" ;;
+  audit-gen)            run gen-audit-setup.sh "$@" ;;
+  update)               run update.sh "$@" ;;
+  check-update)         run check-update.sh "$@" ;;
+  version|--version|-v) echo "luffy-arm $VERSION" ;;
+  help|--help|-h|"")    usage ;;
+  *) echo "luffy-arm: unknown command '$cmd'" >&2; echo >&2; usage >&2; exit 2 ;;
+esac

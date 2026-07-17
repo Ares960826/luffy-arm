@@ -20,9 +20,10 @@ echo "# ===== 🖥 RUN ON THE SERVER (needs sudo; YOU run it, not the agent) ===
 echo "sudo setfacl -R  -m u:$CC_USER:$perm \"$dir\""
 echo "sudo setfacl -R -d -m u:$CC_USER:$perm \"$dir\""
 if [[ "$mode" == ro ]]; then
-  echo "# carve out sensitive subdirs (keys/tokens):"
+  echo "# carve out sensitive subdirs (keys/tokens) — explicit DENY so it works even on"
+  echo "# world-readable dirs (a removed grant would fall back to the 'other' read bit):"
   for s in ${READ_EXCLUDES[@]+"${READ_EXCLUDES[@]}"}; do   # guard: empty array is legal (bash 3.2 + set -u)
-    echo "sudo setfacl -R -x u:$CC_USER \"$dir/$s\" 2>/dev/null; sudo setfacl -R -d -x u:$CC_USER \"$dir/$s\" 2>/dev/null"
+    echo "sudo setfacl -R -m u:$CC_USER:--- \"$dir/$s\" 2>/dev/null; sudo setfacl -R -d -m u:$CC_USER:--- \"$dir/$s\" 2>/dev/null"
   done
 fi
 echo "# ===== 💻 then append \"$dir\" to $([[ $mode == ro ]] && echo READ_ROOTS || echo WORK_DIRS) in your params.sh ====="

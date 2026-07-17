@@ -1,6 +1,6 @@
 {
   "name": "luffy-arm",
-  "version": "1.3.0",
+  "version": "1.6.0",
   "description": "Give a local AI agent a remote hand over SSH: read, run, diagnose and pull data from a remote Linux server behind a tiered, unprivileged, ACL-read-only safety model.",
   "author": {
     "name": "Ares960826"

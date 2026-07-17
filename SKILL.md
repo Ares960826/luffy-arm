@@ -1,6 +1,6 @@
 ---
 name: luffy-arm
-version: 1.3.0
+version: 1.6.0
 description: Use when a local AI agent needs to reach into a remote Linux server over SSH — to explore data, run commands, inspect logs, diagnose something on the server, or pull data down to the local machine — or to set up that SSH access for the first time. Triggers include "luffy-arm", "connect to my server", "ssh into the remote box", "explore/poke around the server", "run this on the server", "download/fetch data from the server", "set up remote access", "reverse remote-ssh", 远程服务器, 远程开发. Not for purely local work, and not for moving the agent or its config onto the server.
 ---
 
@@ -108,6 +108,27 @@ edit/write **as themselves**, full-power mode is available — treat it as a loa
   INV-1 (brain local), INV-3 (passphrase/sudo are the user's), and the sudo password gate.
 - **Close it when done:** `bash scripts/fullpower.sh off` (also auto-expires after the TTL;
   `off`/`status` verify the alias really stopped authenticating).
+
+## Optional: command auditing (opt-in — off by default)
+
+If the user wants a record of **what the agent has actually run on the server** — the one
+thing the *local* machine can't see inside `ssh <alias> "…"` — offer server-side auditing.
+It's off until the user explicitly turns it on, and it's **detect, not prevent** (a fifth,
+complementary layer on top of the four safety nets; it never blocks anything).
+
+- **Turn on:** `bash scripts/gen-audit-setup.sh` (local, no secrets) emits
+  `luffy-arm-audit-setup.sh`; the **user** copies it to the server and runs
+  `bash luffy-arm-audit-setup.sh enable` with their own sudo. You do NOT run it (INV-3).
+- **Read / off:** `bash luffy-arm-audit-setup.sh show [N]` lists recent audited commands;
+  `… disable` removes it cleanly (past log entries are kept).
+- **Scope:** only the safe-mode `cc` account is audited; full-power (login as the user) is
+  never intercepted. Details + honest limits + an auditd alternative: `references/audit-logging.md`.
+
+> **Human shortcut (not for you, the agent):** if the user ran `install.sh`, they may have a
+> `luffy-arm` command on their PATH — or its shorter `luffy` alias — (`luffy-arm fullpower on`,
+> `luffy verify`, `luffy-arm audit-gen`, …) that simply forwards to these same `scripts/*.sh`.
+> **You** should keep calling the scripts by path — it's PATH-independent and unambiguous. The
+> command exists for the human.
 
 ## Common mistakes
 - Agent key has a passphrase → non-interactive login fails. It **must** be passphrase-less.
