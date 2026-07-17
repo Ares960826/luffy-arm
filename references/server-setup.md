@@ -1,5 +1,9 @@
 # luffy-arm — server-side setup (🖥 runs on the SERVER, by YOU)
 
+> **Shortcut:** `bash scripts/gen-server-setup.sh` (run locally) bundles everything below into
+> one filled-in, idempotent `luffy-arm-server-setup.sh` you run once on the server. The steps
+> here are the manual equivalent / reference.
+>
 > These are the **privileged** steps. The AGENT does **not** run them — it generates a
 > filled-in version of these commands for you, and **you** run them on the server with
 > your own `sudo`. This preserves INV-3 (the agent never holds your password).

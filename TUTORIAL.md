@@ -102,8 +102,9 @@ Open Claude Code and say:
 > "Use luffy-arm to set up access to my server `your.server.ip`, my login is `youruser`."
 
 The agent will ask what to read/write, write your params file, ask permission and make the
-key + ssh config, hand you the server commands to paste, then verify. Want to understand each
-step (or do it without the agent)? The manual path below is the exact same thing.
+key + ssh config, then hand you **one** filled-in server script to run (it needs your sudo).
+After you run it, the agent verifies the channel. Want to understand each step (or do it
+without the agent)? The manual path below is the exact same thing.
 
 ---
 
@@ -150,20 +151,29 @@ for speed.
 
 ### 4.4 — Set up the server side (🖥 SERVER — you, once)
 
-Log in as yourself:
+**The easy way — one generated script.** Locally, turn your params + public key into a single
+filled-in server script:
 ```bash
-ssh youruser@your.server.ip
+bash scripts/gen-server-setup.sh          # writes ./luffy-arm-server-setup.sh
 ```
-> First time it may ask "continue connecting? (yes)" and your password — both normal. You're
-> now in the server's terminal.
+Copy it up and run it **on the server, as yourself** (not `sudo bash` — it calls `sudo`
+internally where needed):
+```bash
+scp luffy-arm-server-setup.sh youruser@your.server.ip:~/
+ssh youruser@your.server.ip 'bash luffy-arm-server-setup.sh'   # it asks for your sudo password
+```
+That one script does all of it — **(1)** create the `cc` account, **(2)** install your public
+key, **(3)** grant `cc` read-only on your `READ_ROOTS` and carve out secrets, **(4)** optional
+work dir — and it's idempotent (safe to re-run).
 
-Run the commands from [`references/server-setup.md`](references/server-setup.md) (the agent
-fills them in for you). They: **(1)** create the `cc` account, **(2)** install the public key
-you copied, **(3)** grant `cc` read-only on your `READ_ROOTS` and carve out your secrets,
-**(4)** optionally add a writable work dir. Then `exit`.
+> Why you run it, not the agent: it needs `sudo`. Keeping `sudo` (your password) in your hands
+> is exactly the safety boundary — the agent generates the script but never holds your password.
 
-> Why you run these, not the agent: they need `sudo`. Keeping `sudo` (your password) in your
-> hands is exactly the safety boundary — the agent never holds it.
+<details><summary><b>Prefer to paste commands one by one?</b></summary>
+
+Log in as yourself (`ssh youruser@your.server.ip`) and run the commands from
+[`references/server-setup.md`](references/server-setup.md) — the same four steps, spelled out.
+</details>
 
 ### 4.5 — Verify (💻 LOCAL)
 
@@ -241,6 +251,19 @@ Or just ask the agent: *"download `/data/run42` from the server"* — secrets in
   `ssh-copy-id`), then `bash scripts/fullpower.sh on` (you type the passphrase) and check with
   `bash scripts/verify-fullpower.sh`. It auto-disables after ~1h; `fullpower.sh off` ends it
   now.
+
+---
+
+## 8.5 Keeping it up to date
+
+`verify.sh` prints a one-line nudge when a newer version is published. To upgrade:
+
+- **Claude Code (installed via the plugin marketplace):** `/plugin update luffy-arm@ares-toolkit`
+  — or enable auto-update once so it keeps itself current (see the README "Updating" section).
+- **Codex / Cursor / OpenCode, or a `curl` install:** `bash scripts/update.sh` pulls the latest
+  and re-installs into every agent it detects.
+
+Your `~/.config/luffy-arm/params.sh` and your keys are untouched by an update.
 
 ---
 

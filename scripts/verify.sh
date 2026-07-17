@@ -33,4 +33,8 @@ check "sudo without password denied (gate)" "! ssh $SO $H 'sudo -n true 2>/dev/n
 check "local brain present (agent config dir)" 'test -d "$HOME/.claude" || test -d "$HOME/.codex" || test -d "$HOME/.cursor" || test -d "$HOME/.config/opencode"'
 
 echo "----"; echo "passed $pass / failed $fail"
+
+# best-effort "newer version available?" nudge (non-fatal, network-optional)
+bash "$(dirname "$0")/check-update.sh" 2>/dev/null || true
+
 [[ $fail -eq 0 ]] && echo "🎉 all passed" || { echo "see ❌ above; consult references/setup-guide.md"; exit 1; }

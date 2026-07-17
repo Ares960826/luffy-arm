@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/version-v1.2.0-brightgreen.svg" alt="Version v1.2.0">
+  <img src="https://img.shields.io/badge/version-v1.3.0-brightgreen.svg" alt="Version v1.3.0">
   <a href="https://github.com/Ares960826/luffy-arm/actions/workflows/shellcheck.yml"><img src="https://github.com/Ares960826/luffy-arm/actions/workflows/shellcheck.yml/badge.svg" alt="shellcheck CI"></a>
 </p>
 
@@ -72,8 +72,15 @@ It hands you the exact privileged commands; you run them with your sudo
 
 ## Install
 
-**One command — auto-detects your agent(s)** and installs into the right skills dir for each
-AI coding agent it finds (Claude Code, Codex, Cursor, OpenCode):
+**Claude Code — via the plugin marketplace** (recommended; gets you one-command updates, and
+opt-in auto-update):
+```text
+/plugin marketplace add Ares960826/ares-agent-toolkit
+/plugin install luffy-arm@ares-toolkit
+```
+
+**Any agent — one command** that auto-detects your agent(s) and installs into the right skills
+dir for each (Claude Code, Codex, Cursor, OpenCode):
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ares960826/luffy-arm/main/install.sh | bash
 ```
@@ -103,6 +110,16 @@ First time? The friendly end-to-end walkthrough is [`TUTORIAL.md`](TUTORIAL.md).
 
 ## Quick start
 
+**The easy way — let your agent drive it.** After installing, just say:
+
+> *"Use luffy-arm to set up access to my server."*
+
+The agent configures everything local automatically, interviews you for the details, and hands
+you **one** server command to run. You only ever do the parts it can't (type your sudo password
+on the server). See [`SKILL.md`](SKILL.md) for exactly what it does.
+
+<details><summary><b>By hand</b> (same steps, if you'd rather run them yourself)</summary>
+
 ```bash
 # 1. fill in your params (kept OUTSIDE the repo)
 mkdir -p ~/.config/luffy-arm && cp scripts/params.example.sh ~/.config/luffy-arm/params.sh
@@ -112,13 +129,44 @@ $EDITOR ~/.config/luffy-arm/params.sh
 bash scripts/keygen.sh        # prints the public key
 bash scripts/ssh-config.sh
 
-# 3. server (YOU, with sudo): see references/server-setup.md — create cc, install key, set ACLs
+# 3. generate the filled-in server script, then run it ON THE SERVER (you, with sudo)
+bash scripts/gen-server-setup.sh          # writes luffy-arm-server-setup.sh
+#   scp luffy-arm-server-setup.sh you@server:~/ && ssh you@server 'bash luffy-arm-server-setup.sh'
 
 # 4. local: verify the channel + all safety nets
 bash scripts/verify.sh        # → 🎉 all passed
 ```
+</details>
 
 Full hand-holding walkthrough: [`TUTORIAL.md`](TUTORIAL.md).
+
+## Updating
+
+luffy-arm tells you when a newer version is published (`verify.sh` prints a one-line nudge), and
+upgrading is one step:
+
+- **Claude Code (plugin marketplace):** `/plugin update luffy-arm@ares-toolkit`. To keep it
+  **automatic**, turn on auto-update once: `/plugin` → **Marketplaces** → select *ares-toolkit*
+  → **Enable auto-update**. (Third-party marketplaces don't auto-update until you flip that
+  switch — deliberate, for a tool that touches SSH. Prefer to review changes first? Leave it off
+  and run `/plugin update` when you want.)
+
+  <details><summary>Org admins: push auto-update to everyone via managed settings</summary>
+
+  ```json
+  // managed-settings.json (admin/managed scope — NOT user settings.json)
+  {
+    "extraKnownMarketplaces": {
+      "ares-toolkit": {
+        "source": { "source": "github", "repo": "Ares960826/ares-agent-toolkit" },
+        "autoUpdate": true
+      }
+    }
+  }
+  ```
+  </details>
+- **Codex / Cursor / OpenCode / curl installs:** `bash scripts/update.sh` (pulls the latest and
+  re-installs into every detected agent).
 
 ## Fetching data to your machine
 
@@ -137,8 +185,9 @@ Secrets in `READ_EXCLUDES` can't be read, so they can't be pulled; uploads land 
 ```
 TUTORIAL.md               # full human walkthrough — start here if you're new
 SKILL.md                  # agent playbook (read first if you're an AI agent)
-scripts/                  # safe mode:  keygen.sh · ssh-config.sh · verify.sh · grant.sh · params.example.sh
+scripts/                  # safe mode:  keygen.sh · ssh-config.sh · gen-server-setup.sh · verify.sh · grant.sh · params.example.sh
                           # full-power: admin-keygen.sh · fullpower.sh · verify-fullpower.sh
+                          # upkeep:     update.sh · check-update.sh
 references/               # setup-guide.md · server-setup.md · security-model.md
 ```
 

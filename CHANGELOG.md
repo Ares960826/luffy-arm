@@ -3,6 +3,33 @@
 All notable changes to luffy-arm. Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/). Versions before 1.2.0 are tagged retroactively.
 
+## [1.3.0] — 2026-07-17
+
+Two headline features: one-command guided setup, and real update paths for every agent.
+
+### Added
+
+- **One-command guided setup.** `scripts/gen-server-setup.sh` turns your params + public key
+  into a single, self-contained, idempotent `luffy-arm-server-setup.sh`. Everything local is
+  automated by the agent; the server side collapses from ~8 copy-paste commands to one
+  `bash luffy-arm-server-setup.sh` you run with your own sudo. The generated script also
+  installs the optional full-power admin key under *your own* account (no sudo). SKILL.md's
+  INSTALL mode is rewritten as a guided wizard that drives this end to end.
+- **Update paths.** `scripts/update.sh` (git pull or re-run the installer) upgrades luffy-arm
+  in place for Codex/Cursor/OpenCode/curl users; `scripts/check-update.sh` prints a
+  non-fatal "newer version available" nudge, and `verify.sh` runs it at the end.
+- **Claude Code plugin marketplace.** `.claude-plugin/plugin.json` makes the repo installable
+  as a plugin; the companion `ares-agent-toolkit` marketplace lets Claude Code users
+  `/plugin install luffy-arm@ares-toolkit` and `/plugin update`. README documents enabling
+  auto-update (per-user via the `/plugin` UI toggle; org-wide via managed settings).
+
+### Changed
+
+- Full-power mode documentation hardened: SKILL.md now spells out that the passphrase-in-
+  ssh-agent IS the gate, and that the agent must NEVER auto-load the key, make it
+  passphrase-less, or enable the mode on the user's behalf.
+- `install.sh` also excludes `.claude-plugin/` from the standalone skill copy.
+
 ## [1.2.0] — 2026-07-17
 
 Security-hardening + token-economy release, prepared for the public launch.

@@ -58,15 +58,16 @@ copy_into(){
     echo "  ✓ $dest (is the source clone itself — left as-is)"; return 0
   fi
   mkdir -p "$dest"
-  # assets/ (~3.3 MB of README images) and .github/ are repo décor, not skill content — skip them
+  # assets/ (~3.3 MB of README images), .github/ and .claude-plugin/ (marketplace metadata)
+  # are repo décor, not skill content — skip them
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete --exclude='.git' --exclude='.github' --exclude='.omc' --exclude='.DS_Store' \
-      --exclude='ChatGPT*' --exclude='assets' "$SRC/" "$dest/"
-    rm -rf "$dest/assets" "$dest/.github" "$dest/.omc"   # purge pre-1.2 leftovers (--delete protects excluded paths)
+    rsync -a --delete --exclude='.git' --exclude='.github' --exclude='.claude-plugin' \
+      --exclude='.omc' --exclude='.DS_Store' --exclude='ChatGPT*' --exclude='assets' "$SRC/" "$dest/"
+    rm -rf "$dest/assets" "$dest/.github" "$dest/.claude-plugin" "$dest/.omc"   # purge pre-1.2 leftovers
   else
     rm -rf "$dest"; mkdir -p "$dest"       # poor man's --delete: no stale files across upgrades
     cp -R "$SRC/." "$dest/"
-    rm -rf "$dest/.git" "$dest/.github" "$dest/.omc" "$dest/.DS_Store" "$dest/assets"
+    rm -rf "$dest/.git" "$dest/.github" "$dest/.claude-plugin" "$dest/.omc" "$dest/.DS_Store" "$dest/assets"
   fi
   echo "  ✓ $dest"
 }

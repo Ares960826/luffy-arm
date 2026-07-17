@@ -1,6 +1,6 @@
 ---
 name: luffy-arm
-version: 1.2.0
+version: 1.3.0
 description: Use when a local AI agent needs to reach into a remote Linux server over SSH — to explore data, run commands, inspect logs, diagnose something on the server, or pull data down to the local machine — or to set up that SSH access for the first time. Triggers include "luffy-arm", "connect to my server", "ssh into the remote box", "explore/poke around the server", "run this on the server", "download/fetch data from the server", "set up remote access", "reverse remote-ssh", 远程服务器, 远程开发. Not for purely local work, and not for moving the agent or its config onto the server.
 ---
 
@@ -55,27 +55,34 @@ Reach in over the alias. Default is **read-only**; only `WORK_DIRS` are writable
 | read a file | `ssh <alias> "cat <path>"` |
 | **download data → local** | `scp <alias>:<path> ./` · `rsync -avz <alias>:<dir>/ ./<dir>/` — anything `cc` can read (secrets in `READ_EXCLUDES` can't be pulled) |
 | grant a new read/write dir | `bash scripts/grant.sh ro\|rw <path>` → user runs the printed server cmds |
+| update to the latest version | `bash scripts/update.sh` (Claude Code plugin users: `/plugin update luffy-arm`) |
 
 Source edits happen **locally**; sync up only into `WORK_DIRS` when needed.
 
-## INSTALL mode (set the channel up)
+## INSTALL mode — guided one-command setup
 
-Treat the user as a first-timer — **assume nothing is configured.** Run scripts from this
-skill's directory.
+Treat the user as a first-timer — **assume nothing is configured.** You drive the whole
+thing; the user only does the two steps you literally cannot: type their **sudo password** on
+the server, and (full-power only) type a **key passphrase**. Run scripts from this skill's dir.
 
-1. **Reachability first.** Confirm the user can already `ssh <their-user>@<server>` (or has
-   an account they can get). If they can't reach the server at all, help with that before
-   anything else — don't proceed without it.
-2. **Params — gather by asking, then write the file.** Ask for: server IP/host, their server
-   username, an alias nickname, which dirs to read, which (if any) to write. **Write those
-   into `~/.config/luffy-arm/params.sh` yourself** (template: `scripts/params.example.sh`).
-   Don't make the user hand-edit unless they prefer to.
-3. **Local — ask permission first** (these touch `~/.ssh`): run `bash scripts/keygen.sh`
-   (prints the public key) then `bash scripts/ssh-config.sh`.
-4. **Server — the USER runs it (you must NOT):** present the filled-in commands from
-   `references/server-setup.md` (create `cc`, paste the pubkey, set ACLs); they run them on
-   the server with their own sudo.
+1. **Reachability first.** Confirm the user can already `ssh <their-user>@<server>` (or has an
+   account they can get). If they can't reach the server at all, fix that before anything else.
+2. **Interview, then write params yourself.** Ask: server IP/host, their server username, an
+   alias nickname, which dirs to read (default: their home), which (if any) to write. Write
+   `~/.config/luffy-arm/params.sh` from `scripts/params.example.sh` — don't make them hand-edit.
+3. **Local — do it in one go** (ask once before touching `~/.ssh`): `bash scripts/keygen.sh`
+   then `bash scripts/ssh-config.sh`.
+4. **Server — generate ONE script; the USER runs it.** `bash scripts/gen-server-setup.sh`
+   emits a filled-in `luffy-arm-server-setup.sh` (their params + the pubkey inlined). Tell them
+   to copy it to the server and run `bash luffy-arm-server-setup.sh` there — it self-uses
+   `sudo`, so **they** type their password. You must NOT run it and must NOT ask for that
+   password. Wait for them to confirm it finished. (Fallback if the generator can't run:
+   hand-walk `references/server-setup.md`.)
 5. **Verify:** `bash scripts/verify.sh` → expect `🎉 all passed`.
+
+The whole flow: install (one command) → you configure local + interview + hand them one server
+command → they run it → you verify. Don't hand-walk the individual server commands unless step 4
+can't generate them.
 
 Human walkthrough: `TUTORIAL.md`. Quick steps: `references/setup-guide.md`. Why it's safe:
 `references/security-model.md`.
@@ -85,14 +92,22 @@ Human walkthrough: `TUTORIAL.md`. Quick steps: `references/setup-guide.md`. Why 
 Default is safe mode (read-only `cc`). If the user **explicitly** wants the agent to
 edit/write **as themselves**, full-power mode is available — treat it as a loaded gun:
 
-- **The user enables it, not you.** They run `bash scripts/fullpower.sh on` and type the admin
-  key **passphrase** — you never see, ask for, or embed it (INV-3). One-time setup:
-  TUTORIAL §8 / `references/server-setup.md` step 5.
+- **How the gate works:** the admin key **has a passphrase**; loading it into ssh-agent
+  (`ssh-add -t TTL`) is what arms full-power, and the key auto-drops after the TTL. So while
+  armed, `ssh <ADMIN_ALIAS>` needs no password — the *passphrase-in-ssh-agent* IS the gate.
+- **Set-up (opt-in, only when asked):** `bash scripts/admin-keygen.sh` (the user types a real
+  passphrase — you never see it; an empty one is rejected), then re-run `bash
+  scripts/ssh-config.sh` (adds the admin alias) and `bash scripts/gen-server-setup.sh` (its
+  output now also installs the admin pubkey under the user's *own* account — no sudo).
+- **Enabling is ALWAYS the user, NEVER you.** They run `bash scripts/fullpower.sh on` and type
+  the passphrase. Never auto-load the key, never make it passphrase-less, never add it to
+  ssh-agent on their behalf, never enable it "to save a step" (that removes the gate = INV-3).
 - **Use it:** while ON, `ssh <ADMIN_ALIAS> "<cmd>"` runs as the user with full read/write.
   Confirm with `bash scripts/verify-fullpower.sh`.
 - **It lifts** the data-read-only net + INV-2 (you may now edit remote files). **Still holds:**
   INV-1 (brain local), INV-3 (passphrase/sudo are the user's), and the sudo password gate.
-- **Close it when done:** `bash scripts/fullpower.sh off` (it also auto-expires after the TTL).
+- **Close it when done:** `bash scripts/fullpower.sh off` (also auto-expires after the TTL;
+  `off`/`status` verify the alias really stopped authenticating).
 
 ## Common mistakes
 - Agent key has a passphrase → non-interactive login fails. It **must** be passphrase-less.
