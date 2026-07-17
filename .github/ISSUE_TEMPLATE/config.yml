@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Security vulnerability
+    url: https://github.com/Ares960826/luffy-arm/security/advisories/new
+    about: Please report security issues privately — do NOT open a public issue.
+  - name: 📖 Setup help
+    url: https://github.com/Ares960826/luffy-arm/blob/main/TUTORIAL.md
+    about: The step-by-step tutorial covers setup and a troubleshooting section.

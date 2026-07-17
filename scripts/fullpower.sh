@@ -6,6 +6,7 @@
 set -euo pipefail
 PARAMS="${LUFFY_ARM_PARAMS:-$HOME/.config/luffy-arm/params.sh}"
 [[ -f "$PARAMS" ]] || { echo "Missing params: $PARAMS — copy scripts/params.example.sh there and fill it in."; exit 1; }
+# shellcheck source=/dev/null
 source "$PARAMS"
 : "${ADMIN_KEY:?ADMIN_KEY not set in params — add the full-power vars (see scripts/params.example.sh).}"
 : "${ADMIN_ALIAS:?ADMIN_ALIAS not set in params.}"
@@ -25,12 +26,24 @@ case "${1:-status}" in
     ;;
   off)
     ssh-add -d "$ADMIN_KEY" 2>/dev/null || true     # remove the key from the agent
-    ssh -O exit "$ADMIN_ALIAS" 2>/dev/null || true  # drop any live multiplexed connection → effective immediately
-    echo "🔴 full-power OFF. 'ssh $ADMIN_ALIAS' can no longer authenticate; back to read-only cc mode."
+    ssh -O exit "$ADMIN_ALIAS" 2>/dev/null || true  # drop any leftover multiplexed connection (older configs)
+    # trust but verify: the mode is only OFF if the alias really can't authenticate anymore
+    if ssh -o BatchMode=yes -o ConnectTimeout=5 "$ADMIN_ALIAS" true 2>/dev/null; then
+      echo "⚠️  '$ADMIN_ALIAS' STILL AUTHENTICATES — the admin key is loaded in another ssh-agent"
+      echo "    (tmux/forwarded agent?), or a cached master connection survived (old ~/.ssh/config"
+      echo "    block with multiplexing — re-run scripts/ssh-config.sh on a fresh alias to fix)."
+      echo "    Close it: run 'ssh-add -d $ADMIN_KEY' in the shell that ran 'on', then 'ssh -O exit $ADMIN_ALIAS'."
+      exit 1
+    fi
+    echo "🔴 full-power OFF — verified: 'ssh $ADMIN_ALIAS' no longer authenticates; back to read-only cc mode."
     ;;
   status)
     if loaded; then
       echo "🟢 ON  — $ADMIN_ALIAS available ($ADMIN_USER, full read/write)"
+    elif ssh -o BatchMode=yes -o ConnectTimeout=5 "$ADMIN_ALIAS" true 2>/dev/null; then
+      echo "⚠️  key is NOT in this shell's ssh-agent, yet '$ADMIN_ALIAS' still authenticates —"
+      echo "    another ssh-agent holds the key, or a cached master connection is alive."
+      echo "    Close it: bash scripts/fullpower.sh off"
     else
       echo "🔴 OFF — safe mode only ($HOST_ALIAS: cc read-only + WORK_DIRS writable)"
     fi

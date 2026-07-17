@@ -4,6 +4,12 @@
 
 <h1 align="center">🦾 Luffy's Arm</h1>
 
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/version-v1.2.0-brightgreen.svg" alt="Version v1.2.0">
+  <a href="https://github.com/Ares960826/luffy-arm/actions/workflows/shellcheck.yml"><img src="https://github.com/Ares960826/luffy-arm/actions/workflows/shellcheck.yml/badge.svg" alt="shellcheck CI"></a>
+</p>
+
 **Give a *local* AI coding agent a remote hand.** The agent's brain — its process,
 config, and memory — stays on your machine; only a single SSH "arm" reaches into a
 remote Linux server to **read, run, and diagnose**, behind tiered safety.
@@ -26,6 +32,17 @@ You write code locally and your data/compute live on a server. You want the agen
 *look* at the data and *run* things there — without shipping your brain, memory, or
 credentials to a shared box. luffy-arm is that channel, with guardrails.
 
+## When you need this
+
+- **A shared/institutional HPC or lab server where you *can't* install an AI agent** — no
+  root, no outbound network, or policy forbids it; SSH/SFTP is the only way in. luffy-arm
+  keeps the agent on your laptop and gives it a hand on the server.
+- **Your data is too big to sync down** — the agent explores and filters it in place and
+  pulls back only the results.
+- **You want AI hands on a box, but with OS-enforced guarantees** — a dedicated
+  unprivileged account, read-only ACLs, no `sudo` without your password.
+- **One setup serves every agent you use** — Claude Code, Codex, Cursor, OpenCode.
+
 ## How it works
 
 <p align="center">
@@ -45,8 +62,13 @@ credentials to a shared box. luffy-arm is that channel, with guardrails.
 |---|---|
 | Generate the SSH key, write `~/.ssh/config`, verify the channel, then read/run/diagnose over `ssh` | Create the `cc` account, install the public key, apply the read/write ACLs |
 
-The agent **never** runs the privileged server steps and **never** handles a password —
-it hands you the exact commands; you run them. (See the invariants in the security model.)
+It hands you the exact privileged commands; you run them with your sudo
+([security model](references/security-model.md)).
+
+## Prerequisites
+
+- **Local:** an AI CLI agent (Claude Code / Codex / Cursor / OpenCode) + OpenSSH.
+- **Remote:** Linux with `sshd` + the `acl` package + a sudo-capable human (one-time setup only).
 
 ## Install
 
@@ -107,9 +129,8 @@ scp mybox:/data/run42/metrics.json ./                        # one file
 rsync -avz --partial --progress mybox:/data/run42/ ./run42/  # a directory (resumable)
 ssh mybox "tar czf - /data/run42" | tar xzf -                # stream a whole tree, no temp files
 ```
-`scp`/`rsync` reuse the ControlMaster connection, so repeated transfers are fast. Traffic is
-**server → local** for anything readable — secrets can't be read, so they can't be pulled.
-Uploads (local → server) land only in `WORK_DIRS` in safe mode; full-power lifts that.
+Secrets in `READ_EXCLUDES` can't be read, so they can't be pulled; uploads land only in
+`WORK_DIRS`.
 
 ## Layout
 
@@ -124,10 +145,16 @@ references/               # setup-guide.md · server-setup.md · security-model.
 ## Scope
 
 - **Safe mode (default):** `cc` reads your data, writes only in `WORK_DIRS`.
-- **Full-power mode (opt-in, off by default):** log in as yourself for full read/write,
-  controlled by a passphrase-protected key that auto-expires after a TTL. Enable with
-  `admin-keygen.sh` → `fullpower.sh on`, verify with `verify-fullpower.sh`. You always type
-  the passphrase (INV-3). Reasoning: [`references/security-model.md`](references/security-model.md).
+- **Full-power mode (opt-in):** log in as yourself for full read/write, gated by a
+  passphrase only you type, TTL auto-off. How & why:
+  [`references/security-model.md`](references/security-model.md).
+
+## Contributing & issues
+
+PRs welcome — see [CONTRIBUTING.md](.github/CONTRIBUTING.md). Found a bug or want a
+feature? Open an issue — templates guide you. Vulnerabilities: [SECURITY.md](.github/SECURITY.md).
+Stuck? Troubleshooting lives in [`TUTORIAL.md`](TUTORIAL.md) §7 and
+[`references/setup-guide.md`](references/setup-guide.md).
 
 ## License
 

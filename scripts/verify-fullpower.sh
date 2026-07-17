@@ -6,6 +6,7 @@
 set -uo pipefail
 PARAMS="${LUFFY_ARM_PARAMS:-$HOME/.config/luffy-arm/params.sh}"
 [[ -f "$PARAMS" ]] || { echo "Missing params: $PARAMS — copy scripts/params.example.sh there and fill it in."; exit 1; }
+# shellcheck source=/dev/null
 source "$PARAMS"
 : "${ADMIN_KEY:?ADMIN_KEY not set in params — add the full-power vars (see scripts/params.example.sh).}"
 H="$HOST_ALIAS"; A="$ADMIN_ALIAS"
@@ -22,29 +23,30 @@ if ! { [[ -n "$(fp)" ]] && ssh-add -l 2>/dev/null | grep -q "$(fp)"; }; then
   exit 2
 fi
 
+[[ ${READ_ROOTS[*]+x} ]] || { echo "READ_ROOTS is empty in params — need at least one read-only root to probe."; exit 2; }
 RR="${READ_ROOTS[0]}"                 # first read-only root, used as the "writable under full-power" probe
-S="-o BatchMode=yes -o ConnectTimeout=10"
+S=(-o BatchMode=yes -o ConnectTimeout=10)
 
 # 1. admin alias identity == ADMIN_USER
-who_admin=$(ssh $S "$A" whoami 2>/dev/null)
+who_admin=$(ssh "${S[@]}" "$A" whoami 2>/dev/null)
 [ "$who_admin" = "$ADMIN_USER" ] && ok "admin alias logs in as $ADMIN_USER" \
                                   || no "admin alias identity=[$who_admin] (expected $ADMIN_USER)"
 
 # 2. full-power write: a read-only root (denied for cc) is now writable (and cleaned up)
-if ssh $S "$A" "touch '$RR/._fpverify_$$' && rm -f '$RR/._fpverify_$$'" 2>/dev/null; then
+if ssh "${S[@]}" "$A" "touch '$RR/._fpverify_$$' && rm -f '$RR/._fpverify_$$'" 2>/dev/null; then
   ok "full-power can write read-only root $RR"
 else
   no "full-power write to $RR failed (likely: admin pubkey not in $ADMIN_USER's authorized_keys)"
 fi
 
 # 3. isolation: the safe alias is still cc right now
-who_safe=$(ssh $S "$H" whoami 2>/dev/null)
+who_safe=$(ssh "${S[@]}" "$H" whoami 2>/dev/null)
 [ "$who_safe" = "$CC_USER" ] && ok "safe alias is still $CC_USER" \
                               || no "safe alias identity=[$who_safe] (expected $CC_USER)"
 
 # 4. isolation: cc is still denied write to the read-only root
-if ssh $S "$H" "touch '$RR/._ccverify_$$'" 2>/dev/null; then
-  no "$CC_USER could write $RR (should not!)"; ssh $S "$H" "rm -f '$RR/._ccverify_$$'" 2>/dev/null
+if ssh "${S[@]}" "$H" "touch '$RR/._ccverify_$$'" 2>/dev/null; then
+  no "$CC_USER could write $RR (should not!)"; ssh "${S[@]}" "$H" "rm -f '$RR/._ccverify_$$'" 2>/dev/null
 else
   ok "$CC_USER still denied write to $RR (read-only isolation holds)"
 fi

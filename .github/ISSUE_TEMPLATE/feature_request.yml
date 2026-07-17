@@ -1,0 +1,44 @@
+name: 💡 Feature request
+description: Propose an improvement or a new capability
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that luffy-arm doesn't support (or makes awkward)?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How you imagine it working. Sketches, command examples, doc snippets welcome.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Safe mode / ACL model
+        - Full-power mode
+        - Installer / cross-agent support
+        - Docs (README / TUTORIAL / references)
+        - SKILL.md agent behavior
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety-model impact
+      description: |
+        luffy-arm's design invariants: brain stays local · agent never touches passwords or
+        passphrases · privileged server-side steps are run by the human. If your proposal
+        touches any of these, say how it stays within (or why it should change) the model.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

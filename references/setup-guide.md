@@ -1,22 +1,10 @@
-# luffy-arm — setup guide (first-time, step by step)
+# luffy-arm — setup guide (quick reference)
 
-> Hand-holding guide; assumes no Linux-admin background. Every command is marked
-> **💻 LOCAL** (your machine) or **🖥 SERVER** (the remote box). Values in `<ANGLE>`
-> come from your `params.sh`.
+> Terse step checklist + deep troubleshooting. **New to this? Read `TUTORIAL.md` instead —
+> it assumes nothing.** Every command is marked **💻 LOCAL** (your machine) or **🖥 SERVER**
+> (the remote box). Values in `<ANGLE>` come from your `params.sh`.
 
-## Step 0 — three things to understand first (2 min)
-
-**① Two places.** 💻 LOCAL is your machine; the agent and its brain/config/memory live
-here, always. 🖥 SERVER is the remote Linux box where your data/code live. The agent
-reaches over `ssh` to **read data and run commands** — but it (the brain) never moves.
-
-**② "Create a `cc` account" ≠ a new machine, ≠ copying data.** It's another *key to the
-same house*: same server, same disk, same `/home` and `/data`. Your own account is the
-owner key; `cc` is a restricted guest key we give **read-only** on your data and
-**write** only in a small work area. It is your *original* data, just seen read-only.
-
-**③ Four safety nets** (full reasoning in `security-model.md`): 🔒 sudo password gate ·
-👁 data read-only (ACL) · ♻ per-project version control · 🗄 local authoritative copy.
+Mental model & safety nets: `TUTORIAL.md` §1 · `references/security-model.md`.
 
 ## Prep checklist
 
@@ -48,42 +36,26 @@ It prints a line `ssh-ed25519 AAAA…` — that's the **public** key; keep it fo
 
 # Part 2 — 🖥 SERVER
 
-> See `references/server-setup.md` for the exact, copy-pasteable block. Log in as
-> yourself first: `ssh <YOUR_OWN_USERNAME>@<SERVER_IP>`. Summary:
+> Steps 3–6 run **ON THE SERVER** — use the single copy-pasteable block in
+> `references/server-setup.md` (1 create `cc` · 2 install pubkey · 3 read ACLs + secret
+> carve-out · 4 optional work dir). Log in as yourself first:
+> `ssh <YOUR_OWN_USERNAME>@<SERVER_IP>`.
 
 ## Step 3 — create the read-only `cc` account
-```bash
-# 🖥 SERVER
-sudo adduser --disabled-password --gecos "" <CC_USER>
-sudo deluser <CC_USER> users 2>/dev/null || true   # remove from shared writable group
-groups <CC_USER>                                    # should be just "<CC_USER> : <CC_USER>"
-```
-Why `deluser … users`: a different user already can't write your files **unless** you
-share a writable group. Removing it makes write-protection airtight and free.
+Why: a separate user outside any shared writable group makes write-protection airtight
+and free.
 
 ## Step 4 — install the public key for `cc`
-Paste the step-2 public key (see server-setup.md step 2). After this, the agent can log
-in as `cc` without a password.
+Why: after this, the agent can log in as `cc` without a password.
 
 ## Step 5 — grant read-only on your data
-```bash
-# 🖥 SERVER
-which setfacl || sudo apt-get install -y acl
-sudo setfacl -R  -m u:<CC_USER>:rX <READ_ROOT>
-sudo setfacl -R -d -m u:<CC_USER>:rX <READ_ROOT>     # -d = future files auto-inherit (handles growing paths)
-```
-Then **carve secrets back out** (the real protection — keys/tokens). Use the
-`READ_EXCLUDES` loop in server-setup.md. This is a fail-open blacklist → list generously.
+Why: the default ACL (`-d`) makes future files auto-inherit (handles growing paths).
+Then **carve secrets back out** (`READ_EXCLUDES` — the real protection): fail-open —
+list generously; see `references/security-model.md`.
 
 ## Step 6 — grant write on a work area (optional)
-```bash
-# 🖥 SERVER
-sudo setfacl -R  -m u:<CC_USER>:rwX <WORK_DIR>
-sudo setfacl -R -d -m u:<CC_USER>:rwX <WORK_DIR>
-exit   # back to LOCAL
-```
-Version control is **not** pre-set — `git`/`jj` init individual projects when you want
-rollback (avoids snapshotting huge trees).
+Why: `WORK_DIRS` are the agent's only writable area. Version control is **not** pre-set —
+`git`/`jj` init individual projects when you want rollback. Then `exit` back to LOCAL.
 
 ---
 

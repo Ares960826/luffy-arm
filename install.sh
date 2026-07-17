@@ -24,8 +24,9 @@ fi
 if [[ -z "$SRC" ]]; then          # piped via curl, or not run from a clone → fetch it
   command -v git >/dev/null 2>&1 || { echo "❌ need git to fetch $SKILL_NAME"; exit 1; }
   TMP="$(mktemp -d)"
+  trap 'rm -rf "$TMP"' EXIT
   echo "→ cloning $REPO_URL …"
-  git clone --depth 1 "$REPO_URL" "$TMP/$SKILL_NAME" >/dev/null 2>&1
+  git clone --depth 1 "$REPO_URL" "$TMP/$SKILL_NAME" >/dev/null   # stderr kept: a failed clone must say why
   SRC="$TMP/$SKILL_NAME"
 fi
 [[ -f "$SRC/SKILL.md" ]] || { echo "❌ skill source not found (no SKILL.md at $SRC)"; exit 1; }
@@ -51,12 +52,21 @@ fi
 # --- 3. copy the skill into each target ---
 copy_into(){
   local dest="$1/$SKILL_NAME"
+  # guard: if the target IS the source (user cloned straight into the skills dir), copying
+  # would first wipe the source — nothing to do, it's already in place
+  if [[ -e "$dest" && "$(cd "$SRC" && pwd)" == "$(cd "$dest" 2>/dev/null && pwd)" ]]; then
+    echo "  ✓ $dest (is the source clone itself — left as-is)"; return 0
+  fi
   mkdir -p "$dest"
+  # assets/ (~3.3 MB of README images) and .github/ are repo décor, not skill content — skip them
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete --exclude='.git' --exclude='.omc' --exclude='.DS_Store' --exclude='ChatGPT*' "$SRC/" "$dest/"
+    rsync -a --delete --exclude='.git' --exclude='.github' --exclude='.omc' --exclude='.DS_Store' \
+      --exclude='ChatGPT*' --exclude='assets' "$SRC/" "$dest/"
+    rm -rf "$dest/assets" "$dest/.github" "$dest/.omc"   # purge pre-1.2 leftovers (--delete protects excluded paths)
   else
+    rm -rf "$dest"; mkdir -p "$dest"       # poor man's --delete: no stale files across upgrades
     cp -R "$SRC/." "$dest/"
-    rm -rf "$dest/.git"
+    rm -rf "$dest/.git" "$dest/.github" "$dest/.omc" "$dest/.DS_Store" "$dest/assets"
   fi
   echo "  ✓ $dest"
 }

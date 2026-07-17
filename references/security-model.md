@@ -1,8 +1,6 @@
 # luffy-arm — security model
 
-luffy-arm gives a **local** AI agent a **remote hand**: the agent's brain (process,
-config, memory) never leaves your machine; only an SSH "arm" reaches into the
-server to **read, run, and diagnose**. This file explains exactly what protects you.
+Exactly what protects you when a local agent's SSH arm reaches into your server.
 
 ## The metaphor → the rules
 
@@ -21,10 +19,7 @@ A rubber arm stretches out from a body that stays put. So:
 | INV-2 | **Local is the source of truth** | On the server the agent only **reads / runs / diagnoses**. It does **not** edit remote source files. Edit locally, then sync. |
 | INV-3 | **The agent never touches a password** | Login is by SSH key. `sudo` and every server-root action use a password **you** type. The agent never holds, embeds, or asks for a password or key passphrase. |
 
-> **Full-power mode (opt-in, off by default)** lets the agent log in as your own account for
-> full read/write — a deliberate exception that lifts INV-2 and the data-read-only net. It
-> stays gated by a passphrase you type (INV-3 holds) and auto-disables after a TTL; the sudo
-> gate and your local authoritative copy still apply. Details in "Full-power mode" below.
+> Full-power mode is a deliberate opt-in exception — see §Full-power mode below.
 
 ## Four safety nets (defense in depth)
 
@@ -72,20 +67,22 @@ that as a deliberate, narrow exception:
   (you). `scripts/fullpower.sh on` loads it into ssh-agent — **you type the passphrase**
   (INV-3 holds) — and `off` removes it. The admin ssh alias authenticates *only* while the key
   is loaded (its `IdentityFile` is the public key, so it's usable solely via the agent), and
-  the key auto-expires after `FULLPOWER_TTL` (default 1h).
+  the key auto-expires after `FULLPOWER_TTL` (default 1h). The admin alias is deliberately
+  NOT connection-multiplexed (no ControlMaster), so when the key leaves ssh-agent — TTL
+  expiry or `fullpower.sh off` — no cached connection can outlive it; `off` additionally
+  verifies the alias no longer authenticates.
 - **What it lifts:** the *data read-only* net and INV-2 (no editing remote source) — you now
   have full read/write as yourself.
 - **What still holds:** the **sudo password gate** (root still needs your password), your
   **local authoritative copy**, **INV-3** (passphrase + sudo password are typed by you, never
   the agent), and **INV-1** (the brain stays local).
-- **Enable:** `admin-keygen.sh` (make the passphrased key) → install its pubkey under your own
-  account (server-setup.md step 5) → `fullpower.sh on` → `verify-fullpower.sh`. Close with
-  `fullpower.sh off`.
+- **Enable:** `admin-keygen.sh` (make the passphrased key — an empty passphrase is rejected)
+  → install its pubkey under your own account (server-setup.md step 5) → `fullpower.sh on` →
+  `verify-fullpower.sh`. Close with `fullpower.sh off`.
 - **Not for** multi-tenant / low-trust boxes — same caveat as the read model above.
 
 ## Non-goals
 
 - Not a multi-tenant / hostile-server hardening kit.
 - Not a secrets manager.
-- Full-power (read/write as yourself) is **opt-in and off by default** (see above) — enable it
-  deliberately, and not on multi-tenant/hostile boxes.
+- Full-power is opt-in and off by default (see above).

@@ -1,0 +1,74 @@
+name: 🐛 Bug report
+description: Something in luffy-arm doesn't work as documented
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! One request before you start:
+        **⚠️ Redact private details.** Never paste real server IPs, hostnames, usernames,
+        key material, or `params.sh` contents verbatim. Replace them with placeholders
+        (`<SERVER>`, `<USER>`, …) — the skill's whole point is keeping those private.
+  - type: input
+    id: version
+    attributes:
+      label: luffy-arm version
+      description: "`git -C <clone> describe --tags` or the version in SKILL.md / CHANGELOG.md"
+      placeholder: v1.2.0
+    validations:
+      required: true
+  - type: dropdown
+    id: agent
+    attributes:
+      label: Agent host
+      options:
+        - Claude Code
+        - Codex
+        - Cursor
+        - OpenCode
+        - Other (say which in the description)
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode when the bug occurred
+      options:
+        - Safe mode (cc user, read-only)
+        - Full-power mode (admin key via ssh-agent)
+        - During setup (no mode yet)
+    validations:
+      required: true
+  - type: input
+    id: local-os
+    attributes:
+      label: Local OS (where the agent runs)
+      placeholder: macOS 15.5 / Ubuntu 24.04 / Windows 11 + WSL2
+    validations:
+      required: true
+  - type: input
+    id: server-os
+    attributes:
+      label: Server OS (the remote end)
+      placeholder: Ubuntu 22.04
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: verify-output
+    attributes:
+      label: Output of verify.sh (redacted)
+      description: |
+        Run `bash scripts/verify.sh` (and `verify-fullpower.sh` if relevant) and paste the
+        output **with hostnames/usernames redacted**.
+      render: shell
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Relevant SSH config lines (redacted), error messages, workarounds you tried.

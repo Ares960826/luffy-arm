@@ -6,6 +6,7 @@
 set -euo pipefail
 PARAMS="${LUFFY_ARM_PARAMS:-$HOME/.config/luffy-arm/params.sh}"
 [[ -f "$PARAMS" ]] || { echo "Missing params: $PARAMS"; exit 1; }
+# shellcheck source=/dev/null
 source "$PARAMS"
 mode="${1:-}"; dir="${2:-}"
 if [[ ! "$mode" =~ ^(ro|rw)$ || -z "$dir" ]]; then
@@ -20,9 +21,11 @@ echo "sudo setfacl -R  -m u:$CC_USER:$perm \"$dir\""
 echo "sudo setfacl -R -d -m u:$CC_USER:$perm \"$dir\""
 if [[ "$mode" == ro ]]; then
   echo "# carve out sensitive subdirs (keys/tokens):"
-  for s in "${READ_EXCLUDES[@]}"; do
+  for s in ${READ_EXCLUDES[@]+"${READ_EXCLUDES[@]}"}; do   # guard: empty array is legal (bash 3.2 + set -u)
     echo "sudo setfacl -R -x u:$CC_USER \"$dir/$s\" 2>/dev/null; sudo setfacl -R -d -x u:$CC_USER \"$dir/$s\" 2>/dev/null"
   done
 fi
 echo "# ===== 💻 then append \"$dir\" to $([[ $mode == ro ]] && echo READ_ROOTS || echo WORK_DIRS) in your params.sh ====="
-[[ "$mode" == rw ]] && echo "# (optional) version-control it per-project: ssh $HOST_ALIAS \"cd '$dir' && git init\""
+if [[ "$mode" == rw ]]; then
+  echo "# (optional) version-control it per-project: ssh $HOST_ALIAS \"cd '$dir' && git init\""
+fi

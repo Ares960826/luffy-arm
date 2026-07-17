@@ -172,12 +172,13 @@ bash scripts/verify.sh
 ```
 Expected ending:
 ```
-passed 9 / failed 0
+passed N / failed 0
 🎉 all passed
 ```
+(N = 4 fixed checks + 2 per read root + 1 per work dir — e.g. 6 for the §4.1 example.)
 That confirms: passwordless login, connection reuse, the agent can **read** your data but
-**not write** it, the work dir is writable, `sudo` is blocked, and your brain is local. Any
-❌ → see Troubleshooting.
+**not write** it, your work dir is writable (if you set one), `sudo` is blocked, and your
+brain is local. Any ❌ → see Troubleshooting.
 
 ---
 
@@ -197,8 +198,8 @@ and sync, so your local copy stays the source of truth.
 scp mybox:/data/run42/metrics.json ./                        # one file
 rsync -avz --partial --progress mybox:/data/run42/ ./run42/  # a directory (resumable, fast)
 ```
-Or just ask the agent: *"download `/data/run42` from the server"*. Secrets in `READ_EXCLUDES`
-are unreadable, so they can't be pulled; uploads land only in `WORK_DIRS` (safe mode).
+Or just ask the agent: *"download `/data/run42` from the server"* — secrets in
+`READ_EXCLUDES` stay unreadable, so they can never be pulled.
 
 ---
 
@@ -221,7 +222,7 @@ are unreadable, so they can't be pulled; uploads land only in `WORK_DIRS` (safe 
 | Symptom | Fix |
 |---|---|
 | `Permission denied (publickey)` even though fingerprints match | The agent key has a passphrase. It must be passphrase-less: `rm ~/.ssh/luffy-arm-key*; bash …/keygen.sh`, then reinstall the new public key. |
-| Step 4.5 still asks for a password | Public key not installed right (redo 4.4), or key perms: `chmod 600 ~/.ssh/luffy-arm-key`. |
+| Step 4.5 fails at "passwordless ssh login" (verify.sh never prompts — it fails fast) | Public key not installed right (redo 4.4), or key perms: `chmod 600 ~/.ssh/luffy-arm-key`. Manual `ssh mybox` asking for a password = same cause. |
 | "read-only root can't read" | The `setfacl … -d` step (4.4 part 3) was missed; `getfacl <dir>` should show `user:cc:r-x`. |
 | "work dir write denied" | That path isn't in `WORK_DIRS`, or part 4 was skipped. |
 | `setfacl: command not found` on the server | `sudo apt-get install -y acl` (Debian/Ubuntu; use your distro's package elsewhere). |
@@ -235,11 +236,11 @@ are unreadable, so they can't be pulled; uploads land only in `WORK_DIRS` (safe 
 - 🚫 **Can't in safe mode (by design):** write outside `WORK_DIRS`, run `sudo`, touch your
   passwords, or move itself / its config onto the server.
 - 🔓 **Full-power mode (opt-in, off by default):** when you *want* the agent to read/write as
-  yourself, run `bash scripts/admin-keygen.sh` (makes a passphrase-protected key), install its
-  pubkey under your own account (server-setup §5 — or `ssh-copy-id`), then
-  `bash scripts/fullpower.sh on` (you type the passphrase) and check with
+  yourself, run `bash scripts/admin-keygen.sh` (makes a passphrase-protected key — an empty
+  passphrase is rejected), install its pubkey under your own account (server-setup §5 — or
+  `ssh-copy-id`), then `bash scripts/fullpower.sh on` (you type the passphrase) and check with
   `bash scripts/verify-fullpower.sh`. It auto-disables after ~1h; `fullpower.sh off` ends it
-  now. You always type the passphrase — the agent never holds it (INV-3).
+  now.
 
 ---
 

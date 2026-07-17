@@ -5,7 +5,9 @@
 set -euo pipefail
 PARAMS="${LUFFY_ARM_PARAMS:-$HOME/.config/luffy-arm/params.sh}"
 [[ -f "$PARAMS" ]] || { echo "Missing params: $PARAMS — copy scripts/params.example.sh there and fill it in."; exit 1; }
+# shellcheck source=/dev/null
 source "$PARAMS"
+install -d -m 700 "$(dirname "$KEY")"
 
 if [[ -f "$KEY" ]]; then
   echo "Key already exists: $KEY (skipping generation)"

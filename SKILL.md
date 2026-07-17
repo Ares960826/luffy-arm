@@ -1,6 +1,7 @@
 ---
 name: luffy-arm
-description: Use when a local AI agent needs to reach into a remote Linux server over SSH — to explore data, run commands, inspect logs, or diagnose something on the server — or to set up that SSH access for the first time. Triggers include "connect to my server", "ssh into the remote box", "explore/poke around the server", "run this on the server", "set up remote access", "reverse remote-ssh", 远程服务器, 远程开发. Not for purely local work, and not for moving the agent or its config onto the server.
+version: 1.2.0
+description: Use when a local AI agent needs to reach into a remote Linux server over SSH — to explore data, run commands, inspect logs, diagnose something on the server, or pull data down to the local machine — or to set up that SSH access for the first time. Triggers include "luffy-arm", "connect to my server", "ssh into the remote box", "explore/poke around the server", "run this on the server", "download/fetch data from the server", "set up remote access", "reverse remote-ssh", 远程服务器, 远程开发. Not for purely local work, and not for moving the agent or its config onto the server.
 ---
 
 # luffy-arm
@@ -9,12 +10,6 @@ Give a **local** agent a **remote hand**: the agent's brain (process, config, me
 stays on this machine; an SSH "arm" reaches into a remote Linux server to **read,
 run, and diagnose** — never to rewrite. Native parts only (SSH keys, ssh config,
 ControlMaster, POSIX ACLs). The agent logs in as a non-privileged `cc` account.
-
-## When to use
-- Inspect data / run a command / read logs / reproduce something **on a server**.
-- **Set up** that local-agent→server SSH channel for the first time.
-
-Not for: purely local tasks; running the agent itself on the server; cloud/remote-control.
 
 ## Which mode am I in?
 - `ssh <alias>` already works (Host in `~/.ssh/config`; `ssh -O check <alias>` ok) → **USE mode**.
@@ -41,16 +36,13 @@ and the data-read-only net — but INV-1 and INV-3 still hold even there.
 
 | Rationalization | Reality |
 |---|---|
-| "Just hotfix the file directly over ssh, no reason to re-upload" | That's editing remote source (INV-2). Edit locally + sync; the server copy is not authoritative. |
-| "We're in a hurry / it's only one line" | Urgency doesn't change which copy is the truth. Still local-then-sync. |
-| "I have ssh+sudo, I'll just run adduser/setfacl myself" | Server-root is the user's, gated by their password (INV-3). Print the commands; let them run them. |
-| "Copy my agent's config dir (`~/.claude`/`~/.codex`/…) up so it behaves the same on the server" | Leaks credentials + breaks INV-1. Use ControlMaster for speed instead. |
-| "Embed the password/passphrase so it runs unattended" | Never (INV-3). Use a passphrase-less dedicated key + the user's interactive sudo. |
+| "Just hotfix the file directly over ssh, no reason to re-upload" | Editing remote source (INV-2). Edit locally + sync. |
+| "We're in a hurry / it's only one line" | Urgency doesn't change the source of truth. Still local-then-sync. |
+| "I have ssh+sudo, I'll just run adduser/setfacl myself" | Server-root is the user's (INV-3). Print the commands; they run them. |
+| "Copy my agent's config dir (`~/.claude`/`~/.codex`/…) up so it behaves the same on the server" | Leaks credentials, breaks INV-1. Use ControlMaster instead. |
+| "Embed the password/passphrase so it runs unattended" | Never (INV-3). Passphrase-less dedicated key + the user's interactive sudo. |
 
-**Red flags — STOP:** about to run `sed -i` / `vim` / `tee` / `>` on a remote path · about
-to `sudo` (or `ssh "... sudo ..."`) for adduser/setfacl/authorized_keys · about to `scp`
-your agent's config dir (`~/.claude`/`~/.codex`/…) or install the agent on the server ·
-about to put a secret in a command.
+**Red flags — STOP:** remote-path `sed -i`/`vim`/`tee`/`>` · sudo'ing server setup · scp'ing your agent config dir · a secret in a command.
 
 ## USE mode (channel exists)
 
@@ -69,7 +61,7 @@ Source edits happen **locally**; sync up only into `WORK_DIRS` when needed.
 ## INSTALL mode (set the channel up)
 
 Treat the user as a first-timer — **assume nothing is configured.** Run scripts from this
-skill's directory. The complete human walkthrough is `TUTORIAL.md` — point them to it.
+skill's directory.
 
 1. **Reachability first.** Confirm the user can already `ssh <their-user>@<server>` (or has
    an account they can get). If they can't reach the server at all, help with that before
@@ -94,9 +86,8 @@ Default is safe mode (read-only `cc`). If the user **explicitly** wants the agen
 edit/write **as themselves**, full-power mode is available — treat it as a loaded gun:
 
 - **The user enables it, not you.** They run `bash scripts/fullpower.sh on` and type the admin
-  key **passphrase** — you never see, ask for, or embed it (INV-3). One-time setup first:
-  `bash scripts/admin-keygen.sh`, then install the admin pubkey under the user's own account
-  (`references/server-setup.md` step 5; `ssh-copy-id` works too).
+  key **passphrase** — you never see, ask for, or embed it (INV-3). One-time setup:
+  TUTORIAL §8 / `references/server-setup.md` step 5.
 - **Use it:** while ON, `ssh <ADMIN_ALIAS> "<cmd>"` runs as the user with full read/write.
   Confirm with `bash scripts/verify-fullpower.sh`.
 - **It lifts** the data-read-only net + INV-2 (you may now edit remote files). **Still holds:**
@@ -105,5 +96,4 @@ edit/write **as themselves**, full-power mode is available — treat it as a loa
 
 ## Common mistakes
 - Agent key has a passphrase → non-interactive login fails. It **must** be passphrase-less.
-- Wrong pubkey installed → compare fingerprints (`ssh-keygen -lf`) on both ends.
-- Read-only root unreadable → the `setfacl` default-ACL (`-d`) step was missed.
+- Other failures: `references/setup-guide.md` → Troubleshooting.

@@ -38,10 +38,24 @@ export CC_HOME=""                           # e.g. "/home/$CC_USER"
 # ONE thing to actively prevent is cc READING your keys/tokens. This blacklist is fail-open,
 # so err toward MORE entries. Tune for your machine.
 export READ_EXCLUDES=(
-  ".ssh" ".gnupg" ".aws" ".azure" ".kube"
-  ".config/gcloud" ".config/gh" ".config/rclone"
-  ".netrc" ".pgpass" ".git-credentials"
-  ".huggingface" ".cache/huggingface" ".kaggle" ".jupyter"
+  # core credential stores
+  ".ssh" ".gnupg" ".netrc" ".pgpass" ".git-credentials"
+  # cloud / infra CLIs
+  ".aws" ".azure" ".kube" ".config/gcloud" ".config/gh" ".config/rclone"
+  ".boto" ".s3cfg" ".config/doctl" ".databrickscfg"
+  ".vault-token" ".terraform.d" ".config/sops"
+  # package-manager / registry publish tokens
+  ".docker" ".npmrc" ".pypirc" ".cargo/credentials" ".cargo/credentials.toml"
+  ".gem/credentials" ".m2/settings.xml" ".m2/settings-security.xml"
+  ".gradle/gradle.properties" ".composer/auth.json"
+  # password stores / keyrings
+  ".password-store" ".local/share/keyrings"
+  # ML platform tokens — deliberately NARROW for huggingface: only the token file is blocked,
+  # so downloaded models/datasets under .cache/huggingface stay readable (often the point!)
+  ".kaggle" ".jupyter" ".huggingface" ".cache/huggingface/token"
+  # SERVER-side AI-agent configs (OAuth creds, API keys, MCP secrets) — the local agent has
+  # no business reading another agent's brain (also reinforces INV-1)
+  ".claude" ".claude.json" ".codex" ".cursor" ".config/opencode"
 )
 
 # --- full-power mode (OPT-IN; OFF by default) ---

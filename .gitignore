@@ -3,8 +3,11 @@ params.sh
 *.local.sh
 
 # Private keys / secrets (defensive; keys live in ~/.ssh, not here)
+# covers both spellings incl. the tool's own defaults luffy-arm-key / luffy-arm-admin-key
 *_key
 *_key.pub
+*-key
+*-key.pub
 id_ed25519*
 id_rsa*
 *.pem
