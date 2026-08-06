@@ -6,8 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/version-v1.6.0-brightgreen.svg" alt="Version v1.6.0">
-  <a href="https://github.com/Ares960826/luffy-arm/actions/workflows/shellcheck.yml"><img src="https://github.com/Ares960826/luffy-arm/actions/workflows/shellcheck.yml/badge.svg" alt="shellcheck CI"></a>
+  <img src="https://img.shields.io/badge/version-v1.7.0-brightgreen.svg" alt="Version v1.7.0">
 </p>
 
 **Give a *local* AI coding agent a remote hand.** The agent's brain — its process,
@@ -83,8 +82,9 @@ opt-in auto-update):
 /plugin install luffy-arm@ares-toolkit
 ```
 
-**Any agent — one command** that auto-detects your agent(s) and installs into the right skills
-dir for each (Claude Code, Codex, Cursor, OpenCode):
+**Any agent — one command** that auto-detects your agent(s) and installs the main skill plus the
+independent full-power ON/OFF switches into the right skills dir for each (Claude Code, Codex,
+Cursor, OpenCode):
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Ares960826/luffy-arm/main/install.sh | bash
 ```
@@ -95,15 +95,26 @@ From a clone instead: `git clone https://github.com/Ares960826/luffy-arm && bash
 ```bash
 # Claude Code · Cursor · OpenCode (all read ~/.claude/skills/):
 git clone https://github.com/Ares960826/luffy-arm ~/.claude/skills/luffy-arm
+LUFFY_ARM_DIR=~/.claude/skills bash ~/.claude/skills/luffy-arm/install.sh
 
 # Codex (reads ~/.agents/skills/ — NOT ~/.claude):
 git clone https://github.com/Ares960826/luffy-arm ~/.agents/skills/luffy-arm
+LUFFY_ARM_DIR=~/.agents/skills bash ~/.agents/skills/luffy-arm/install.sh
 ```
 </details>
 
 Then just tell your agent what you want — e.g. *"set up luffy-arm to my GPU box"* or
 *"use luffy-arm to poke around my server"* — and it follows [`SKILL.md`](SKILL.md).
+After full-power setup, *"turn on full power"* and *"turn off full power"* route to separate,
+purpose-built companion switch skills. Skill hosts do not currently expose true parent/sub-skill
+metadata, so the operations remain independently invokable while their UI labels group them as
+`Luffy Arm › Full Power ON/OFF`. ON remains passphrase-gated and must be run by you.
 First time? The friendly end-to-end walkthrough is [`TUTORIAL.md`](TUTORIAL.md).
+
+> **Upgrading to 1.7.0:** after updating, run `luffy-arm ssh-config` once. This connects the
+> existing admin alias to luffy-arm's stable, user-private agent socket so one interactive ON can
+> be recognized by separate agent conversations. Your key, passphrase, server address, and other
+> SSH connection fields are not changed.
 
 > **Cursor note:** Cursor is a GUI/IDE, not a headless CLI. The skill installs and works inside
 > Cursor's agent chat, but each shell step goes through Cursor's command-approval UI — it can't
@@ -193,6 +204,7 @@ type short subcommands instead of full script paths:
 luffy-arm help                 # list everything
 luffy-arm verify               # safe-mode channel + safety-net check
 luffy-arm fullpower on|off     # opt-in write-as-yourself (you type the passphrase)
+luffy-arm fullpower-on|off     # intent-shaped aliases used by the switch skills
 luffy-arm audit-gen            # generate the opt-in server audit script
 luffy-arm setup | grant | update | …
 ```
@@ -209,6 +221,8 @@ AI agent doesn't use this; it calls the scripts directly.
 ```
 TUTORIAL.md               # full human walkthrough — start here if you're new
 SKILL.md                  # agent playbook (read first if you're an AI agent)
+agents/openai.yaml        # UI label for the main skill
+skills/                   # companion luffy-arm-fullpower-on / -off switch skills + UI labels
 scripts/                  # dispatcher: luffy-arm  (the `luffy-arm <cmd>` command)
                           # safe mode:  keygen.sh · ssh-config.sh · gen-server-setup.sh · verify.sh · grant.sh · params.example.sh
                           # full-power: admin-keygen.sh · fullpower.sh · verify-fullpower.sh
@@ -223,11 +237,17 @@ references/               # setup-guide.md · server-setup.md · security-model.
 - **Full-power mode (opt-in):** log in as yourself for full read/write, gated by a
   passphrase only you type, TTL auto-off. How & why:
   [`references/security-model.md`](references/security-model.md).
+- **Sandbox-safe state:** full-power reports `ON`, verified `OFF`, or `UNKNOWN`; a sandbox or
+  network failure is never mislabeled as OFF. In a runtime known to sandbox SSH/ssh-agent, the
+  agent should request narrowly scoped host execution from the first probe instead of testing the
+  sandbox first; a normal-terminal user check is only the fallback. The ON command publishes a
+  stable agent socket reference under `~/.config/luffy-arm/`, so separate conversations do not
+  depend on their inherited `SSH_AUTH_SOCK` value.
 
-## Contributing & issues
+## Support & issues
 
-PRs welcome — see [CONTRIBUTING.md](.github/CONTRIBUTING.md). Found a bug or want a
-feature? Open an issue — templates guide you. Vulnerabilities: [SECURITY.md](.github/SECURITY.md).
+Found a bug or want a feature? Open an issue — templates guide you. Vulnerabilities:
+[SECURITY.md](.github/SECURITY.md).
 Stuck? Troubleshooting lives in [`TUTORIAL.md`](TUTORIAL.md) §7 and
 [`references/setup-guide.md`](references/setup-guide.md).
 

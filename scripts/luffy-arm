@@ -6,7 +6,7 @@
 # scripts/*.sh directly (PATH-independent, per SKILL.md).
 set -euo pipefail
 
-VERSION="1.6.0"
+VERSION="1.7.0"
 
 # Resolve this script's real dir even when invoked via a symlink (e.g. ~/.local/bin/luffy-arm),
 # so the sibling scripts are found next to the real file, not next to the symlink.
@@ -39,6 +39,8 @@ usage: luffy-arm <command> [args]
   full-power (opt-in; YOU type the passphrase — never the agent):
     admin-keygen           create the passphrased admin key
     fullpower on|off|status
+    fullpower-on [seconds] human-gated ON shortcut
+    fullpower-off          verified OFF shortcut
     verify-fullpower       full-power self-check
 
   auditing (opt-in; enable/disable are run on the SERVER with your sudo):
@@ -60,6 +62,8 @@ case "$cmd" in
   grant)                run grant.sh "$@" ;;
   admin-keygen)         run admin-keygen.sh "$@" ;;
   fullpower)            run fullpower.sh "$@" ;;
+  fullpower-on)         run fullpower.sh on "$@" ;;
+  fullpower-off)        run fullpower.sh off "$@" ;;
   verify-fullpower)     run verify-fullpower.sh "$@" ;;
   audit-gen)            run gen-audit-setup.sh "$@" ;;
   update)               run update.sh "$@" ;;

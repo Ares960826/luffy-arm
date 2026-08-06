@@ -14,6 +14,7 @@ set -euo pipefail
 
 REPO_URL="https://github.com/Ares960826/luffy-arm"
 SKILL_NAME="luffy-arm"
+SUBSKILLS=("luffy-arm-fullpower-on" "luffy-arm-fullpower-off")
 
 # --- 1. locate the skill source (this repo) ---
 SRC=""
@@ -58,16 +59,35 @@ copy_into(){
     echo "  ✓ $dest (is the source clone itself — left as-is)"; return 0
   fi
   mkdir -p "$dest"
-  # assets/ (~3.3 MB of README images), .github/ and .claude-plugin/ (marketplace metadata)
-  # are repo décor, not skill content — skip them
+  # Product allowlist: local development/test artifacts are excluded by default.
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete --exclude='.git' --exclude='.github' --exclude='.claude-plugin' \
-      --exclude='.omc' --exclude='.DS_Store' --exclude='ChatGPT*' --exclude='assets' "$SRC/" "$dest/"
-    rm -rf "$dest/assets" "$dest/.github" "$dest/.claude-plugin" "$dest/.omc"   # purge pre-1.2 leftovers
+    rsync -a --delete --delete-excluded \
+      --include='/SKILL.md' --include='/TUTORIAL.md' --include='/README.md' \
+      --include='/LICENSE' --include='/CHANGELOG.md' --include='/install.sh' \
+      --include='/scripts/***' --include='/references/***' --include='/agents/***' --exclude='*' \
+      "$SRC/" "$dest/"
   else
     rm -rf "$dest"; mkdir -p "$dest"       # poor man's --delete: no stale files across upgrades
-    cp -R "$SRC/." "$dest/"
-    rm -rf "$dest/.git" "$dest/.github" "$dest/.claude-plugin" "$dest/.omc" "$dest/.DS_Store" "$dest/assets"
+    for item in SKILL.md TUTORIAL.md README.md LICENSE CHANGELOG.md install.sh scripts references agents; do
+      [[ -e "$SRC/$item" ]] && cp -R "$SRC/$item" "$dest/"
+    done
+  fi
+  echo "  ✓ $dest"
+}
+
+copy_subskill(){
+  local src="$SRC/skills/$2" dest="$1/$2"
+  [[ -f "$src/SKILL.md" ]] || { echo "❌ sub-skill source not found: $src"; exit 1; }
+  mkdir -p "$dest"
+  if command -v rsync >/dev/null 2>&1; then
+    rsync -a --delete --delete-excluded --include='/SKILL.md' --include='/scripts/***' \
+      --include='/agents/***' \
+      --exclude='*' "$src/" "$dest/"
+  else
+    rm -rf "$dest"; mkdir -p "$dest"
+    cp "$src/SKILL.md" "$dest/"
+    [[ -d "$src/scripts" ]] && cp -R "$src/scripts" "$dest/"
+    [[ -d "$src/agents" ]] && cp -R "$src/agents" "$dest/"
   fi
   echo "  ✓ $dest"
 }
@@ -75,7 +95,10 @@ copy_into(){
 echo "luffy-arm installer"
 echo "Detected: ${AGENTS[*]}"
 echo "Installing →"
-for t in "${TARGETS[@]}"; do copy_into "$t"; done
+for t in "${TARGETS[@]}"; do
+  copy_into "$t"
+  for subskill in "${SUBSKILLS[@]}"; do copy_subskill "$t" "$subskill"; done
+done
 
 # --- 4. optional: put the `luffy-arm` command on your PATH (human convenience only) ---
 # The AGENT never needs this — it calls scripts/*.sh directly. This is purely so a human can
@@ -110,7 +133,7 @@ fi
 # --- 5. next steps ---
 cat <<EOF
 
-✅ Installed. Next:
+✅ Installed luffy-arm + fullpower-on/off switches. Next:
   1) Create your params (kept OUTSIDE any repo):
        mkdir -p ~/.config/$SKILL_NAME
        cp "$SRC/scripts/params.example.sh" ~/.config/$SKILL_NAME/params.sh

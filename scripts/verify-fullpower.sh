@@ -9,31 +9,51 @@ PARAMS="${LUFFY_ARM_PARAMS:-$HOME/.config/luffy-arm/params.sh}"
 # shellcheck source=/dev/null
 source "$PARAMS"
 : "${ADMIN_KEY:?ADMIN_KEY not set in params — add the full-power vars (see scripts/params.example.sh).}"
+: "${FULLPOWER_AGENT_SOCKET:=$HOME/.config/luffy-arm/fullpower-agent.sock}"
 H="$HOST_ALIAS"; A="$ADMIN_ALIAS"
 pass=0; fail=0
 ok(){ echo "✅ $1"; pass=$((pass+1)); }
 no(){ echo "❌ $1"; fail=$((fail+1)); }
 
-# 0. full-power MUST be ON (admin key in ssh-agent), else this test is meaningless
-fp(){ ssh-keygen -lf "$ADMIN_KEY.pub" 2>/dev/null | awk '{print $2}'; }
-if ! { [[ -n "$(fp)" ]] && ssh-add -l 2>/dev/null | grep -q "$(fp)"; }; then
-  echo "⚠️  full-power is currently OFF — this self-check needs it ON."
-  echo "    Run first (asks for the admin passphrase):  bash scripts/fullpower.sh on"
-  echo "    Then re-run:                                 bash scripts/verify-fullpower.sh"
+if ! declare -p READ_ROOTS >/dev/null 2>&1 || [[ ${#READ_ROOTS[@]} -eq 0 ]]; then
+  echo "READ_ROOTS is empty in params — need at least one read-only root to probe."
   exit 2
 fi
-
-[[ ${READ_ROOTS[*]+x} ]] || { echo "READ_ROOTS is empty in params — need at least one read-only root to probe."; exit 2; }
 RR="${READ_ROOTS[0]}"                 # first read-only root, used as the "writable under full-power" probe
 S=(-o BatchMode=yes -o ConnectTimeout=10)
+SA=("${S[@]}")
+[[ -S "$FULLPOWER_AGENT_SOCKET" ]] && SA+=(-o IdentityAgent="$FULLPOWER_AGENT_SOCKET")
+PROBE_ERR="$(mktemp -t luffy-arm-fp.XXXXXX)"
+trap 'rm -f "$PROBE_ERR"' EXIT
+
+# 0. The live alias is authoritative. ssh-agent visibility alone is not: sandboxes may be unable
+# to inspect the user's login-session agent even while the alias works there.
+if who_admin=$(ssh "${SA[@]}" "$A" whoami 2>"$PROBE_ERR"); then
+  :
+else
+  probe_error="$(<"$PROBE_ERR")"
+  if printf '%s\n' "$probe_error" | grep -Eqi \
+    'Permission denied|Authentication failed|No supported authentication methods available'; then
+    echo "⚠️  full-power is OFF — '$A' explicitly rejected authentication."
+    echo "    Run first (asks for the admin passphrase):  bash scripts/fullpower.sh on"
+    echo "    Then re-run:                                 bash scripts/verify-fullpower.sh"
+    exit 2
+  else
+    echo "🟡 full-power verification UNKNOWN — this environment could not reach '$A'."
+    [[ -n "$probe_error" ]] && echo "    ssh probe: $probe_error"
+    echo "    A sandbox/network failure is not proof that full-power is OFF."
+    echo "    Agent: retry with approved host execution; do not repeat a known-blocked sandbox probe."
+    echo "    Human fallback: re-run this check from your normal login terminal."
+    exit 3
+  fi
+fi
 
 # 1. admin alias identity == ADMIN_USER
-who_admin=$(ssh "${S[@]}" "$A" whoami 2>/dev/null)
 [ "$who_admin" = "$ADMIN_USER" ] && ok "admin alias logs in as $ADMIN_USER" \
                                   || no "admin alias identity=[$who_admin] (expected $ADMIN_USER)"
 
 # 2. full-power write: a read-only root (denied for cc) is now writable (and cleaned up)
-if ssh "${S[@]}" "$A" "touch '$RR/._fpverify_$$' && rm -f '$RR/._fpverify_$$'" 2>/dev/null; then
+if ssh "${SA[@]}" "$A" "touch '$RR/._fpverify_$$' && rm -f '$RR/._fpverify_$$'" 2>/dev/null; then
   ok "full-power can write read-only root $RR"
 else
   no "full-power write to $RR failed (likely: admin pubkey not in $ADMIN_USER's authorized_keys)"

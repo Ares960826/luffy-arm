@@ -67,3 +67,4 @@ export READ_EXCLUDES=(
 export ADMIN_KEY="$HOME/.ssh/luffy-arm-admin-key"   # admin key — HAS a passphrase (logs in as ADMIN_USER)
 export ADMIN_ALIAS="${HOST_ALIAS}-admin"            # ssh alias used for full-power mode
 export FULLPOWER_TTL="3600"                          # seconds before full-power auto-disables (default 1h)
+export FULLPOWER_AGENT_SOCKET="$HOME/.config/luffy-arm/fullpower-agent.sock" # stable cross-conversation agent entry

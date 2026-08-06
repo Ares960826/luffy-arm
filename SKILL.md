@@ -1,6 +1,6 @@
 ---
 name: luffy-arm
-version: 1.6.0
+version: 1.7.0
 description: Use when a local AI agent needs to reach into a remote Linux server over SSH — to explore data, run commands, inspect logs, diagnose something on the server, or pull data down to the local machine — or to set up that SSH access for the first time. Triggers include "luffy-arm", "connect to my server", "ssh into the remote box", "explore/poke around the server", "run this on the server", "download/fetch data from the server", "set up remote access", "reverse remote-ssh", 远程服务器, 远程开发. Not for purely local work, and not for moving the agent or its config onto the server.
 ---
 
@@ -14,6 +14,19 @@ ControlMaster, POSIX ACLs). The agent logs in as a non-privileged `cc` account.
 ## Which mode am I in?
 - `ssh <alias>` already works (Host in `~/.ssh/config`; `ssh -O check <alias>` ok) → **USE mode**.
 - Otherwise → **INSTALL mode** (set it up first).
+
+## Execution context — SSH belongs on the host
+
+SSH and ssh-agent are host capabilities. If the agent runtime is known to sandbox network access
+or the login-session ssh-agent, request the platform's narrowly scoped, user-approved **host
+execution** for the first SSH/status command. Do **not** run a known-blocked sandbox probe first.
+
+- Scope approval to the configured SSH alias or the exact luffy-arm status/OFF/verify command.
+- A sandbox denial describes only the sandbox; it says nothing about the server or Full Power.
+- If host execution is unavailable or the user declines it, report `UNKNOWN`. Do not ask the user
+  to re-enable Full Power merely because the sandbox cannot observe it.
+- The ON command remains the exception: the **user** runs it interactively because only they may
+  type the key passphrase.
 
 ## Invariants you MUST hold
 
@@ -94,20 +107,39 @@ edit/write **as themselves**, full-power mode is available — treat it as a loa
 
 - **How the gate works:** the admin key **has a passphrase**; loading it into ssh-agent
   (`ssh-add -t TTL`) is what arms full-power, and the key auto-drops after the TTL. So while
-  armed, `ssh <ADMIN_ALIAS>` needs no password — the *passphrase-in-ssh-agent* IS the gate.
+  armed, `ssh <ADMIN_ALIAS>` needs no password — the *passphrase-in-ssh-agent* IS the gate. ON
+  publishes a user-private stable reference to that agent and the admin alias uses it through
+  `IdentityAgent`, so separate conversations do not depend on their inherited `SSH_AUTH_SOCK`.
+  No key material or passphrase is copied.
 - **Set-up (opt-in, only when asked):** `bash scripts/admin-keygen.sh` (the user types a real
   passphrase — you never see it; an empty one is rejected), then re-run `bash
   scripts/ssh-config.sh` (adds the admin alias) and `bash scripts/gen-server-setup.sh` (its
   output now also installs the admin pubkey under the user's *own* account — no sudo).
+- **Upgrade from before 1.7.0:** after updating, run `bash scripts/ssh-config.sh` once so the
+  existing admin alias receives the shared `IdentityAgent` entry. Connection fields are preserved.
 - **Enabling is ALWAYS the user, NEVER you.** They run `bash scripts/fullpower.sh on` and type
   the passphrase. Never auto-load the key, never make it passphrase-less, never add it to
   ssh-agent on their behalf, never enable it "to save a step" (that removes the gate = INV-3).
+- **Dedicated switch operations:** the plugin bundles two companion skills because current skill
+  hosts expose each slash-invokable operation as an independent skill (there is no nested-skill
+  metadata). Their UI labels group them under Luffy Arm. An explicit "turn on full power" request
+  routes to the sibling
+  `luffy-arm-fullpower-on` skill; "turn off full power" routes to
+  `luffy-arm-fullpower-off`. ON checks host status first: an already-ON gate is reused without
+  another passphrase prompt, and only verified OFF asks the user to run the ON command personally.
+  If the same request includes a remote task, a verified-ON switch continues under this main
+  skill. OFF may be run by the agent and must prove the admin alias stopped authenticating.
 - **Use it:** while ON, `ssh <ADMIN_ALIAS> "<cmd>"` runs as the user with full read/write.
   Confirm with `bash scripts/verify-fullpower.sh`.
 - **It lifts** the data-read-only net + INV-2 (you may now edit remote files). **Still holds:**
   INV-1 (brain local), INV-3 (passphrase/sudo are the user's), and the sudo password gate.
 - **Close it when done:** `bash scripts/fullpower.sh off` (also auto-expires after the TTL;
   `off`/`status` verify the alias really stopped authenticating).
+- **Sandbox result is tri-state:** `ON`, verified `OFF`, or `UNKNOWN`. In a known sandboxed agent,
+  request approved host execution directly instead of probing inside the sandbox first. If host
+  execution is unavailable, report `UNKNOWN`; never infer OFF from `Operation not permitted`,
+  network failure, or an inaccessible agent socket. A user-run normal-terminal check is the last
+  fallback, not the default agent workflow.
 
 ## Optional: command auditing (opt-in — off by default)
 
@@ -132,4 +164,6 @@ complementary layer on top of the four safety nets; it never blocks anything).
 
 ## Common mistakes
 - Agent key has a passphrase → non-interactive login fails. It **must** be passphrase-less.
+- Full-power status says `UNKNOWN` in a sandbox → this is not OFF. Retry with approved host
+  execution; only explicit authentication denial proves OFF.
 - Other failures: `references/setup-guide.md` → Troubleshooting.

@@ -3,6 +3,54 @@
 All notable changes to luffy-arm. Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/). Versions before 1.2.0 are tagged retroactively.
 
+## [1.7.0] — 2026-08-07
+
+Full-power is now a dependable, intent-shaped product operation across normal shells and
+sandboxed agents.
+
+### Added
+
+- **Independent `luffy-arm-fullpower-on` and `luffy-arm-fullpower-off` skills.** Each has its own
+  trigger surface and a thin wrapper around the existing `scripts/fullpower.sh`; the installer
+  places them beside the main skill and the plugin manifest exposes all three skills. UI metadata
+  labels the pair as Luffy Arm companion operations because current skill hosts do not expose a
+  native parent/sub-skill relationship.
+- **Human CLI parity:** `luffy-arm fullpower-on [seconds]` and `luffy-arm fullpower-off` remain
+  thin aliases over the existing full-power switch.
+- **Product-only install allowlist:** installation copies only the shipped skill, scripts,
+  references, license, changelog, and user documentation; unrelated local development artifacts
+  are excluded by default.
+
+### Fixed
+
+- **Sandbox-safe full-power state.** `status`, `off`, and `verify-fullpower.sh` now distinguish
+  `ON`, explicit authentication-denied `OFF`, and transport/agent-inaccessible `UNKNOWN`.
+  Sandbox or network failures are no longer reported as OFF.
+- **Host-first SSH execution for sandboxed agents.** Once a runtime is known to isolate SSH or
+  ssh-agent, the skill requests narrowly scoped, user-approved host execution from the first
+  probe instead of repeating a known-blocked sandbox check or asking the user to re-arm the key.
+- **Full-power verification uses the live admin alias as authority** instead of requiring the
+  current process to see the user's login-session ssh-agent.
+- **Full-power now works across separate conversations.** The interactive ON command publishes a
+  stable, user-private agent socket reference, and the admin SSH alias uses that reference instead
+  of whichever `SSH_AUTH_SOCK` a particular process happened to inherit. No key material or
+  passphrase is copied, and the existing TTL remains authoritative.
+- **ON preflight** checks that the passphrased admin key exists and that the admin SSH alias uses
+  it before asking the user to load it.
+- **ON is idempotent across conversations.** The ON skill now checks host status before prompting:
+  it reuses an already-ON gate, preserves UNKNOWN without demanding a re-arm, and asks for the
+  passphrase command only after verified OFF. A remote task included with the switch continues
+  under the main luffy-arm skill once ON is confirmed.
+
+### Upgrade note
+
+After updating an existing installation, run `luffy-arm ssh-config` once. It adds the shared
+`IdentityAgent` entry to the existing admin alias while leaving its connection fields unchanged.
+
+### Repository
+
+- Removed development-only CI and contribution workflow files from the published product tree.
+
 ## [1.6.0] — 2026-07-17
 
 Security fix: the read-exclusion carve-out now actually hides world-readable secret dirs.
@@ -139,7 +187,7 @@ Security-hardening + token-economy release, prepared for the public launch.
 - `ssh-config.sh`: exact-match duplicate detection (aliases with `.` no longer false-match) and
   an explicit warning that an existing block is not updated when params change.
 - `install.sh`: clone failures now print the git error; temp clone dir is cleaned on exit; the
-  no-rsync fallback no longer ships `.omc/`/`.DS_Store` and removes stale files on upgrade.
+  no-rsync fallback ships only product files and removes stale files on upgrade.
 - TUTORIAL: expected `verify.sh` output corrected (checks scale with your roots/dirs — the old
   text hardcoded `passed 9`).
 
@@ -156,9 +204,9 @@ Security-hardening + token-economy release, prepared for the public launch.
 
 ### Added
 
-- `.github/`: bug-report & feature-request issue forms (with redaction guidance), PR template,
-  CONTRIBUTING.md, SECURITY.md (private vulnerability reporting), shellcheck CI.
-- This CHANGELOG; version/license/CI badges and "When you need this" + Prerequisites sections
+- `.github/`: bug-report & feature-request issue forms (with redaction guidance) and SECURITY.md
+  (private vulnerability reporting).
+- This CHANGELOG; version/license badges and "When you need this" + Prerequisites sections
   in README.
 
 ## [1.1.0] — 2026-07-03 (retroactive tag)

@@ -89,6 +89,13 @@ that as a deliberate, narrow exception:
   NOT connection-multiplexed (no ControlMaster), so when the key leaves ssh-agent — TTL
   expiry or `fullpower.sh off` — no cached connection can outlive it; `off` additionally
   verifies the alias no longer authenticates.
+- **Cross-conversation agent reference:** ON creates a symlink at
+  `~/.config/luffy-arm/fullpower-agent.sock` to the user's current ssh-agent socket and the admin
+  alias uses it through `IdentityAgent`. This avoids process-local `SSH_AUTH_SOCK` drift between
+  conversations. The containing directory is mode `0700`; neither private-key material nor the
+  passphrase is copied. OFF removes the admin key from that agent, and TTL expiry still removes it
+  automatically. The inert socket reference may remain so later status checks can verify explicit
+  authentication denial; it does not itself grant access.
 - **What it lifts:** the *data read-only* net and INV-2 (no editing remote source) — you now
   have full read/write as yourself.
 - **What still holds:** the **sudo password gate** (root still needs your password), your
@@ -97,6 +104,15 @@ that as a deliberate, narrow exception:
 - **Enable:** `admin-keygen.sh` (make the passphrased key — an empty passphrase is rejected)
   → install its pubkey under your own account (server-setup.md step 5) → `fullpower.sh on` →
   `verify-fullpower.sh`. Close with `fullpower.sh off`.
+- **Intent-shaped switches:** the installer also exposes `luffy-arm-fullpower-on` and
+  `luffy-arm-fullpower-off` as companion skills. Current skill hosts have no parent/sub-skill
+  metadata, so UI labels group them under Luffy Arm while retaining independent invocation. They
+  delegate to the same `fullpower.sh`; ON remains a command the user runs personally, while OFF
+  may be invoked by the agent.
+- **Three-state evidence:** a live admin login proves ON and an explicit authentication denial
+  proves OFF. An inaccessible ssh-agent, sandbox denial, or network failure proves neither and
+  is reported as `UNKNOWN`. In a known sandboxed agent, request narrowly scoped host execution
+  from the first probe; use the user's normal login terminal only when host execution is unavailable.
 - **Not for** multi-tenant / low-trust boxes — same caveat as the read model above.
 
 ## Non-goals

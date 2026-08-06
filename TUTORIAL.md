@@ -80,9 +80,11 @@ curl -fsSL https://raw.githubusercontent.com/Ares960826/luffy-arm/main/install.s
 ```bash
 # Claude Code · Cursor · OpenCode (all read ~/.claude/skills/):
 git clone https://github.com/Ares960826/luffy-arm ~/.claude/skills/luffy-arm
+LUFFY_ARM_DIR=~/.claude/skills bash ~/.claude/skills/luffy-arm/install.sh
 
 # Codex (reads ~/.agents/skills/, not ~/.claude):
 git clone https://github.com/Ares960826/luffy-arm ~/.agents/skills/luffy-arm
+LUFFY_ARM_DIR=~/.agents/skills bash ~/.agents/skills/luffy-arm/install.sh
 ```
 </details>
 
@@ -250,7 +252,17 @@ Or just ask the agent: *"download `/data/run42` from the server"* — secrets in
   passphrase is rejected), install its pubkey under your own account (server-setup §5 — or
   `ssh-copy-id`), then `bash scripts/fullpower.sh on` (you type the passphrase) and check with
   `bash scripts/verify-fullpower.sh`. It auto-disables after ~1h; `fullpower.sh off` ends it
-  now.
+  now. With the one-command installer you can instead say *"turn on full power"* / *"turn off
+  full power"* to invoke the two companion switch skills; the ON skill still waits for you to run
+  the passphrase command personally. In a runtime known to sandbox SSH, the agent should request
+  approved host execution directly rather than first running a blocked sandbox probe. `UNKNOWN`
+  means host verification was unavailable — never assume it is OFF or ask the user to re-arm solely
+  because the sandbox could not observe the key.
+
+  The ON command also publishes a stable agent socket reference under `~/.config/luffy-arm/`.
+  That lets separate conversations use the same time-limited gate even if they inherited different
+  `SSH_AUTH_SOCK` values; it does not copy the private key or passphrase. If you upgraded from an
+  older release, run `luffy-arm ssh-config` once before the next ON command.
 
 ---
 
@@ -263,6 +275,9 @@ Or just ask the agent: *"download `/data/run42` from the server"* — secrets in
 - **Codex / Cursor / OpenCode, or a `curl` install:** `bash scripts/update.sh` pulls the latest
   and re-installs into every agent it detects.
 
+When upgrading to 1.7.0, also run `luffy-arm ssh-config` once to add the shared Full Power
+`IdentityAgent` entry to your existing admin alias.
+
 Your `~/.config/luffy-arm/params.sh` and your keys are untouched by an update.
 
 ---
@@ -271,7 +286,8 @@ Your `~/.config/luffy-arm/params.sh` and your keys are untouched by an update.
 
 **Local:**
 ```bash
-rm -rf ~/.claude/skills/luffy-arm        # Codex: ~/.agents/skills/luffy-arm
+rm -rf ~/.claude/skills/luffy-arm ~/.claude/skills/luffy-arm-fullpower-{on,off}
+# Codex: use the same three names under ~/.agents/skills/
 rm -f ~/.ssh/luffy-arm-key ~/.ssh/luffy-arm-key.pub
 # remove the "Host mybox" block from ~/.ssh/config (open it in an editor)
 rm -rf ~/.config/luffy-arm
