@@ -15,8 +15,9 @@ body:
     attributes:
       label: Proposed solution
       description: How you imagine it working. Sketches, command examples, doc snippets welcome.
+      placeholder: Optional — a rough sketch is enough; the maintainer may help shape it.
     validations:
-      required: true
+      required: false
   - type: dropdown
     id: area
     attributes:
