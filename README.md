@@ -1,3 +1,5 @@
+
+
 <p align="center">
   <img src="assets/logo.png" alt="Luffy's Arm — the brain stays local, an SSH arm reaches into the remote server" width="320">
 </p>
@@ -221,7 +223,7 @@ AI agent doesn't use this; it calls the scripts directly.
 ```
 TUTORIAL.md               # full human walkthrough — start here if you're new
 SKILL.md                  # agent playbook (read first if you're an AI agent)
-agents/openai.yaml        # UI label for the main skill
+agents/openai.yaml        # OpenAI agent interface config (display name & short description)
 skills/                   # companion luffy-arm-fullpower-on / -off switch skills + UI labels
 scripts/                  # dispatcher: luffy-arm  (the `luffy-arm <cmd>` command)
                           # safe mode:  keygen.sh · ssh-config.sh · gen-server-setup.sh · verify.sh · grant.sh · params.example.sh
