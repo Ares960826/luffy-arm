@@ -3,6 +3,29 @@
 All notable changes to luffy-arm. Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/). Versions before 1.2.0 are tagged retroactively.
 
+## [1.7.1] — 2026-08-26
+
+Patch release correcting the security meaning of the Full Power switch.
+
+### Fixed
+
+- **Credential gate is no longer confused with effective permission.** `fullpower status` now
+  reports the dedicated `luffy-arm-admin` key gate separately from the authenticated remote
+  identity and from alternate non-interactive SSH access with `IdentitiesOnly=no`. If another
+  key reaches the same `ADMIN_USER`, the result explicitly says effective user access remains;
+  it never claims Safe Mode merely because the dedicated key is OFF.
+- **OFF is honest about residual access.** `fullpower off` removes and verifies the dedicated key,
+  then probes for alternate credentials. It exits with status 4 when the gate is OFF but another
+  key still reaches `ADMIN_USER`, because personal keys are outside the luffy-arm switch.
+- **Permission language is identity-based.** Successful authentication is reported as the actual
+  remote user. Exact path write access and sudo are left to target-specific verification instead
+  of being inferred from the key filename.
+
+### Tests
+
+- Added layered-state regression coverage for dedicated ON, dedicated OFF plus alternate access,
+  complete denial, remote-identity mismatch, and transport-unknown cases.
+
 ## [1.7.0] — 2026-08-07
 
 Full-power is now a dependable, intent-shaped product operation across normal shells and

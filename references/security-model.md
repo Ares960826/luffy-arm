@@ -76,28 +76,35 @@ over-engineering). If you want *visibility* into that opaque string, the answer 
 also server-side: the opt-in command auditing above logs it where it becomes visible
 (on the server), never on your machine.
 
-## Full-power mode (opt-in, off by default)
+## Full-power mode (opt-in; dedicated credential gate off by default)
 
 Sometimes you *want* the agent to edit/write as yourself, not just read. Full-power mode does
 that as a deliberate, narrow exception:
 
-- **How it works:** a *separate* admin key **with a passphrase** logs you in as `ADMIN_USER`
-  (you). `scripts/fullpower.sh on` loads it into ssh-agent — **you type the passphrase**
-  (INV-3 holds) — and `off` removes it. The admin ssh alias authenticates *only* while the key
-  is loaded (its `IdentityFile` is the public key, so it's usable solely via the agent), and
-  the key auto-expires after `FULLPOWER_TTL` (default 1h). The admin alias is deliberately
-  NOT connection-multiplexed (no ControlMaster), so when the key leaves ssh-agent — TTL
-  expiry or `fullpower.sh off` — no cached connection can outlive it; `off` additionally
-  verifies the alias no longer authenticates.
+- **How the dedicated gate works:** a *separate* admin key **with a passphrase** logs you in as
+  `ADMIN_USER` (you). `scripts/fullpower.sh on` loads it into ssh-agent — **you type the
+  passphrase** (INV-3 holds) — and `off` removes it. The generated admin alias selects that public
+  key with `IdentitiesOnly yes`, and the key auto-expires after `FULLPOWER_TTL` (default 1h).
+  The alias is deliberately NOT connection-multiplexed, so no cached connection can outlive the
+  key TTL. This controls the luffy-arm admin credential only. SSH options can admit other agent
+  keys, and any such key accepted for the same `ADMIN_USER` reaches the same Unix identity and
+  is not a lower permission tier.
 - **Cross-conversation agent reference:** ON creates a symlink at
   `~/.config/luffy-arm/fullpower-agent.sock` to the user's current ssh-agent socket and the admin
   alias uses it through `IdentityAgent`. This avoids process-local `SSH_AUTH_SOCK` drift between
   conversations. The containing directory is mode `0700`; neither private-key material nor the
   passphrase is copied. OFF removes the admin key from that agent, and TTL expiry still removes it
   automatically. The inert socket reference may remain so later status checks can verify explicit
-  authentication denial; it does not itself grant access.
-- **What it lifts:** the *data read-only* net and INV-2 (no editing remote source) — you now
-  have full read/write as yourself.
+  authentication denial. If that agent also contains a personal key accepted for `ADMIN_USER`,
+  `IdentitiesOnly=no` can still provide user-level access; the socket is then a route to that other
+  credential, not an independent permission grant.
+- **Identity and permissions:** a successful probe records the actual remote identity. Commands
+  authenticated as `ADMIN_USER` receive that user's OS permissions regardless of which accepted
+  key was used. Exact write access is path-specific, and sudo remains separately password-gated;
+  verify both at the target instead of inferring them from a key name.
+- **What user-level access lifts:** the safe account's *data read-only* net no longer applies
+  because commands are no longer running as `cc`. INV-2 may be lifted only when the user has
+  explicitly authorized the full-power workflow.
 - **What still holds:** the **sudo password gate** (root still needs your password), your
   **local authoritative copy**, **INV-3** (passphrase + sudo password are typed by you, never
   the agent), and **INV-1** (the brain stays local).
@@ -109,14 +116,16 @@ that as a deliberate, narrow exception:
   metadata, so UI labels group them under Luffy Arm while retaining independent invocation. They
   delegate to the same `fullpower.sh`; ON remains a command the user runs personally, while OFF
   may be invoked by the agent.
-- **Three-state evidence:** a live admin login proves ON and an explicit authentication denial
-  proves OFF. An inaccessible ssh-agent, sandbox denial, or network failure proves neither and
-  is reported as `UNKNOWN`. In a known sandboxed agent, request narrowly scoped host execution
-  from the first probe; use the user's normal login terminal only when host execution is unavailable.
+- **Layered evidence:** status reports four distinct facts: configured `ADMIN_USER`, dedicated
+  credential gate (`ON`/`OFF`/`UNKNOWN`), authenticated remote identity, and alternate effective
+  user access with `IdentitiesOnly=no` (`AVAILABLE`/`NOT FOUND`/`UNKNOWN`). Dedicated gate OFF
+  never proves user-level capability is absent. An inaccessible ssh-agent, sandbox denial, or
+  network failure proves neither and is reported as `UNKNOWN`. In a known sandboxed agent,
+  request narrowly scoped host execution from the first probe.
 - **Not for** multi-tenant / low-trust boxes — same caveat as the read model above.
 
 ## Non-goals
 
 - Not a multi-tenant / hostile-server hardening kit.
 - Not a secrets manager.
-- Full-power is opt-in and off by default (see above).
+- The dedicated Full Power credential is opt-in and its gate is off by default (see above).

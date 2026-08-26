@@ -6,7 +6,7 @@
 # scripts/*.sh directly (PATH-independent, per SKILL.md).
 set -euo pipefail
 
-VERSION="1.7.0"
+VERSION="1.7.1"
 
 # Resolve this script's real dir even when invoked via a symlink (e.g. ~/.local/bin/luffy-arm),
 # so the sibling scripts are found next to the real file, not next to the symlink.

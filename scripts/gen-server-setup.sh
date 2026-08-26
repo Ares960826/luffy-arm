@@ -120,7 +120,7 @@ if [[ -n "$ADMIN_PUB" ]]; then
       echo "   already present — skipping"
     else
       printf '%s\n' "$ADMIN_PUB" >> "$HOME/.ssh/authorized_keys"
-      echo "   added. (Full-power stays OFF until you run 'fullpower.sh on' and type the passphrase.)"
+      echo "   added. (The dedicated Full Power gate stays OFF until you run 'fullpower.sh on'.)"
     fi
   fi
 fi
@@ -137,6 +137,6 @@ echo "    scp $OUT ${ADMIN_USER:-<you>}@${SERVER:-<server>}:~/"
 echo "    ssh ${ADMIN_USER:-<you>}@${SERVER:-<server>}    # then, on the server:"
 echo "    bash luffy-arm-server-setup.sh"
 if [[ -n "$ADMIN_PUB" ]]; then
-  echo "(includes the optional full-power admin key — full-power still stays OFF until you enable it.)"
+  echo "(includes the optional admin key — its dedicated gate stays OFF until you enable it.)"
 fi
 exit 0

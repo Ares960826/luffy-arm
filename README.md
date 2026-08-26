@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/version-v1.7.0-brightgreen.svg" alt="Version v1.7.0">
+  <img src="https://img.shields.io/badge/version-v1.7.1-brightgreen.svg" alt="Version v1.7.1">
 </p>
 
 **Give a *local* AI coding agent a remote hand.** The agent's brain — its process,
@@ -45,7 +45,7 @@ credentials to a shared box. luffy-arm is that channel, with guardrails.
 ## How it works
 
 <p align="center">
-  <img src="assets/architecture.png" alt="luffy-arm architecture — a local AI agent (brain, memory, config dir, keys) reaches over an SSH 'arm' into a remote Linux server: safe mode (cc, non-privileged, read-only roots + writable WORK_DIRS, secrets excluded) and opt-in full-power mode (ADMIN_USER via a separate passphrase-gated key, full read/write, TTL auto-off), behind tiered safety" width="840">
+  <img src="assets/architecture.png" alt="luffy-arm architecture — a local AI agent reaches over SSH into a remote Linux server: safe identity cc has ACL-limited access; opt-in ADMIN_USER access uses a dedicated passphrase-gated credential with TTL, while actual permissions follow the authenticated remote identity" width="840">
 </p>
 
 **Tiered safety** (details in [`references/security-model.md`](references/security-model.md)):
@@ -234,11 +234,13 @@ references/               # setup-guide.md · server-setup.md · security-model.
 ## Scope
 
 - **Safe mode (default):** `cc` reads your data, writes only in `WORK_DIRS`.
-- **Full-power mode (opt-in):** log in as yourself for full read/write, gated by a
-  passphrase only you type, TTL auto-off. How & why:
+- **Full-power mode (opt-in):** the dedicated luffy-arm credential is gated by a passphrase only
+  you type and auto-expires by TTL. Status separately reports the actual remote identity and any
+  alternate SSH credential that still reaches your user account. How & why:
   [`references/security-model.md`](references/security-model.md).
-- **Sandbox-safe state:** full-power reports `ON`, verified `OFF`, or `UNKNOWN`; a sandbox or
-  network failure is never mislabeled as OFF. In a runtime known to sandbox SSH/ssh-agent, the
+- **Layered, sandbox-safe state:** status distinguishes the dedicated gate from effective
+  `ADMIN_USER` access. Gate OFF never implies Safe Mode if another key still authenticates as the
+  same remote user. A sandbox or network failure is never mislabeled as OFF. In a runtime known to sandbox SSH/ssh-agent, the
   agent should request narrowly scoped host execution from the first probe instead of testing the
   sandbox first; a normal-terminal user check is only the fallback. The ON command publishes a
   stable agent socket reference under `~/.config/luffy-arm/`, so separate conversations do not

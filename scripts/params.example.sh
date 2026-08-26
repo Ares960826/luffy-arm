@@ -59,11 +59,12 @@ export READ_EXCLUDES=(
 )
 
 # --- full-power mode (OPT-IN; OFF by default) ---
-# Lets the agent log in as ADMIN_USER (you) for FULL read/write — the two data nets (read-only
-# + no-edit-source) are deliberately lifted; the sudo gate, your local copy, and INV-3 (never
+# Lets the agent log in as ADMIN_USER (you), with that account's path-specific permissions. The
+# safe account's data nets no longer apply; the sudo gate, your local copy, and INV-3 (never
 # touch a password) still hold. Controlled by a passphrase-protected admin key loaded into
-# ssh-agent; toggle with scripts/fullpower.sh on|off|status. Leave these as-is if you don't
-# want full-power. Full reasoning: references/security-model.md.
+# ssh-agent; toggle that dedicated credential with scripts/fullpower.sh on|off|status. This
+# switch does not revoke other SSH keys accepted for ADMIN_USER; status detects that separately.
+# Leave these as-is if you don't want full-power. Full reasoning: references/security-model.md.
 export ADMIN_KEY="$HOME/.ssh/luffy-arm-admin-key"   # admin key — HAS a passphrase (logs in as ADMIN_USER)
 export ADMIN_ALIAS="${HOST_ALIAS}-admin"            # ssh alias used for full-power mode
 export FULLPOWER_TTL="3600"                          # seconds before full-power auto-disables (default 1h)

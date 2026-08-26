@@ -22,6 +22,7 @@ fi
 RR="${READ_ROOTS[0]}"                 # first read-only root, used as the "writable under full-power" probe
 S=(-o BatchMode=yes -o ConnectTimeout=10)
 SA=("${S[@]}")
+SA+=(-o IdentitiesOnly=yes -o ControlMaster=no -o ControlPath=none)
 [[ -S "$FULLPOWER_AGENT_SOCKET" ]] && SA+=(-o IdentityAgent="$FULLPOWER_AGENT_SOCKET")
 PROBE_ERR="$(mktemp -t luffy-arm-fp.XXXXXX)"
 trap 'rm -f "$PROBE_ERR"' EXIT
@@ -34,14 +35,16 @@ else
   probe_error="$(<"$PROBE_ERR")"
   if printf '%s\n' "$probe_error" | grep -Eqi \
     'Permission denied|Authentication failed|No supported authentication methods available'; then
-    echo "⚠️  full-power is OFF — '$A' explicitly rejected authentication."
+    echo "⚠️  dedicated full-power gate is OFF — '$A' rejected the luffy-arm-admin credential."
+    echo "    This does not prove that personal/other keys cannot reach $ADMIN_USER."
+    echo "    Run 'bash scripts/fullpower.sh status' for the layered capability report."
     echo "    Run first (asks for the admin passphrase):  bash scripts/fullpower.sh on"
     echo "    Then re-run:                                 bash scripts/verify-fullpower.sh"
     exit 2
   else
     echo "🟡 full-power verification UNKNOWN — this environment could not reach '$A'."
     [[ -n "$probe_error" ]] && echo "    ssh probe: $probe_error"
-    echo "    A sandbox/network failure is not proof that full-power is OFF."
+    echo "    A sandbox/network failure is not proof that the dedicated gate is OFF."
     echo "    Agent: retry with approved host execution; do not repeat a known-blocked sandbox probe."
     echo "    Human fallback: re-run this check from your normal login terminal."
     exit 3

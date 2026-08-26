@@ -51,7 +51,7 @@ done
 # Version control is NOT set here — init git/jj inside individual projects when you want rollback.
 
 # === 5. (OPTIONAL) full-power mode: install the ADMIN pubkey under YOUR OWN account ===
-# Only if you want opt-in full-power (agent logs in as YOU for full read/write). The pubkey is
+# Only if you want opt-in full-power (agent logs in as your remote user identity). The pubkey is
 # the line printed by admin-keygen.sh. This goes in YOUR own ~/.ssh — NO sudo (it's your home,
 # not cc's). Tip: from local you can instead run `ssh-copy-id -i ~/.ssh/luffy-arm-admin-key.pub
 # <YOUR_OWN_USERNAME>@<SERVER_IP>` and skip these three lines.

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# 💻 LOCAL: master switch for opt-in full-power mode. Loading the passphrase-protected admin
-# key into ssh-agent = ON; removing it = OFF. While OFF the admin alias simply cannot
-# authenticate, so the mode is genuinely closed (not just "discouraged").
+# 💻 LOCAL: master switch for the dedicated, passphrase-gated full-power credential.
+# Loading that key into ssh-agent = dedicated gate ON; removing it = dedicated gate OFF.
+# Other SSH credentials may still authenticate as ADMIN_USER, so gate state and effective
+# user capability are reported separately.
 # Usage: bash scripts/fullpower.sh [on [seconds] | off | status]
 set -euo pipefail
 PARAMS="${LUFFY_ARM_PARAMS:-$HOME/.config/luffy-arm/params.sh}"
@@ -71,21 +72,79 @@ agent_state() {
   fi
 }
 
-# Return 0 when the admin alias authenticates, 1 only for an explicit authentication denial,
-# and 2 when transport/sandbox state prevents a trustworthy answer.
+# Probe a fresh, non-interactive public-key login and return 0 only when it reaches ADMIN_USER.
+# $1=yes tests the configured dedicated gate. $1=no deliberately admits other agent keys so
+# status can detect the exact alternate-credential path that the dedicated gate does not control.
+# Return 1 only for explicit authentication denial and 2 for transport errors or identity mismatch.
+identity_probe() {
+  local identities_only="$1" output identity socket
+  local args=(
+    -o BatchMode=yes
+    -o ConnectTimeout=5
+    -o ConnectionAttempts=1
+    -o ControlMaster=no
+    -o ControlPath=none
+    -o IdentitiesOnly="$identities_only"
+    -o PreferredAuthentications=publickey
+    -o PasswordAuthentication=no
+    -o KbdInteractiveAuthentication=no
+    -o NumberOfPasswordPrompts=0
+  )
+  PROBE_DETAIL=""; PROBE_IDENTITY=""
+  if socket="$(agent_socket 2>/dev/null)"; then
+    args+=(-o IdentityAgent="$socket")
+  fi
+  if output="$(ssh "${args[@]}" "$ADMIN_ALIAS" 'id -un' 2>&1)"; then
+    identity="$(printf '%s\n' "$output" | awk 'NF { line=$0 } END { print line }')"
+    PROBE_IDENTITY="$identity"
+    if [[ "$identity" == "$ADMIN_USER" ]]; then
+      return 0
+    fi
+    PROBE_DETAIL="authenticated as '$identity', expected ADMIN_USER '$ADMIN_USER'"
+    return 2
+  fi
+
+  PROBE_DETAIL="$output"
+  if printf '%s\n' "$output" | grep -Eqi \
+    'Permission denied|Authentication failed|No supported authentication methods available'; then
+    return 1
+  fi
+  return 2
+}
+
 auth_probe() {
-  local output
-  local args=(-o BatchMode=yes -o ConnectTimeout=5)
-  AUTH_DETAIL=""
-  [[ -S "$FULLPOWER_AGENT_SOCKET" ]] && args+=(-o IdentityAgent="$FULLPOWER_AGENT_SOCKET")
-  if output="$(ssh "${args[@]}" "$ADMIN_ALIAS" true 2>&1)"; then
+  if identity_probe yes; then
+    AUTH_IDENTITY="$PROBE_IDENTITY"; AUTH_DETAIL=""; return 0
+  else
+    local rc=$?
+    AUTH_IDENTITY="$PROBE_IDENTITY"; AUTH_DETAIL="$PROBE_DETAIL"; return "$rc"
+  fi
+}
+
+effective_access_probe() {
+  if identity_probe no; then
+    EFFECTIVE_IDENTITY="$PROBE_IDENTITY"; EFFECTIVE_DETAIL=""; return 0
+  else
+    local rc=$?
+    EFFECTIVE_IDENTITY="$PROBE_IDENTITY"; EFFECTIVE_DETAIL="$PROBE_DETAIL"; return "$rc"
+  fi
+}
+
+report_effective_access() {
+  if effective_access_probe; then
+    echo "⚠️  EFFECTIVE USER ACCESS: AVAILABLE — another SSH credential authenticates as $EFFECTIVE_IDENTITY with IdentitiesOnly=no."
+    echo "    Dedicated gate OFF does not remove this capability or reduce it to Safe Mode."
+    echo "    Permissions are those of remote user $EFFECTIVE_IDENTITY; verify each target path and sudo separately."
     return 0
   else
-    AUTH_DETAIL="$output"
-    if printf '%s\n' "$output" | grep -Eqi \
-      'Permission denied|Authentication failed|No supported authentication methods available'; then
+    local rc=$?
+    if [[ $rc -eq 1 ]]; then
+      echo "🔒 EFFECTIVE USER ACCESS: NOT FOUND — the alternate non-interactive public-key probe was denied."
+      echo "    The configured luffy-arm path is limited to $HOST_ALIAS ($CC_USER; READ_ROOTS read-only, WORK_DIRS writable)."
       return 1
     fi
+    echo "🟡 EFFECTIVE USER ACCESS: UNKNOWN — alternate credentials or remote identity could not be verified."
+    [[ -n "$EFFECTIVE_DETAIL" ]] && echo "    alternate probe: $EFFECTIVE_DETAIL"
     return 2
   fi
 }
@@ -143,28 +202,37 @@ case "${1:-status}" in
       [[ -n "$AUTH_DETAIL" ]] && echo "   ssh probe: $AUTH_DETAIL"
       exit 1
     fi
-    echo "🟢 full-power ON (auto-off in ~${ttl}s)."
+    echo "🟢 DEDICATED GATE: ON (auto-off in ~${ttl}s)."
     echo "   Shared across conversations through $FULLPOWER_AGENT_SOCKET."
-    echo "   The agent can now run 'ssh $ADMIN_ALIAS \"...\"' as $ADMIN_USER with FULL read/write."
+    echo "   REMOTE IDENTITY: $AUTH_IDENTITY via the dedicated luffy-arm-admin credential."
+    echo "   EFFECTIVE PERMISSIONS: those of $ADMIN_USER; verify target-path write and sudo separately."
     ;;
   off)
     if socket="$(agent_socket 2>/dev/null)"; then
       SSH_AUTH_SOCK="$socket" ssh-add -d "$ADMIN_KEY" 2>/dev/null || true
     fi
     ssh -O exit "$ADMIN_ALIAS" 2>/dev/null || true  # drop any leftover multiplexed connection (older configs)
-    # trust but verify: the mode is only OFF if the alias really can't authenticate anymore
+    # Verify the dedicated credential separately from any alternate key that reaches ADMIN_USER.
     if auth_probe; then
-      echo "⚠️  '$ADMIN_ALIAS' STILL AUTHENTICATES — the admin key is loaded in another ssh-agent"
-      echo "    (tmux/forwarded agent?), or a cached master connection survived (old ~/.ssh/config"
-      echo "    block with multiplexing — re-run scripts/ssh-config.sh on a fresh alias to fix)."
+      echo "⚠️  DEDICATED GATE STILL ON — $ADMIN_ALIAS authenticates as $AUTH_IDENTITY with IdentitiesOnly=yes."
+      echo "    The admin key may be loaded in another ssh-agent (tmux/forwarded agent), or a cached"
+      echo "    master connection may have survived an older SSH configuration."
       echo "    Close it: run 'ssh-add -d $ADMIN_KEY' in the shell that ran 'on', then 'ssh -O exit $ADMIN_ALIAS'."
       exit 1
     else
       probe_rc=$?
       if [[ $probe_rc -eq 1 ]]; then
-        echo "🔴 full-power OFF — verified: 'ssh $ADMIN_ALIAS' no longer authenticates; back to read-only cc mode."
+        echo "🔴 DEDICATED GATE: OFF — the luffy-arm-admin credential was explicitly denied."
+        if report_effective_access; then
+          echo "    OFF removed the dedicated credential only; personal/other SSH keys are outside this switch."
+          exit 4
+        else
+          effective_rc=$?
+          [[ $effective_rc -eq 1 ]] && exit 0
+          exit 3
+        fi
       else
-        echo "🟡 full-power state UNKNOWN — the admin alias could not be tested from this environment."
+        echo "🟡 DEDICATED GATE: UNKNOWN — the admin credential could not be tested from this environment."
         [[ -n "$AUTH_DETAIL" ]] && echo "    ssh probe: $AUTH_DETAIL"
         echo "    Agent: retry with approved host execution. Human fallback (require verified OFF):"
         echo "      bash scripts/fullpower.sh off"
@@ -174,7 +242,9 @@ case "${1:-status}" in
     ;;
   status)
     if auth_probe; then
-      echo "🟢 ON  — $ADMIN_ALIAS available ($ADMIN_USER, full read/write across conversations)"
+      echo "🟢 DEDICATED GATE: ON — luffy-arm-admin authenticates through $ADMIN_ALIAS."
+      echo "   REMOTE IDENTITY: $AUTH_IDENTITY."
+      echo "   EFFECTIVE PERMISSIONS: those of $AUTH_IDENTITY; verify target-path write and sudo separately."
     else
       probe_rc=$?
       if agent_state; then
@@ -183,9 +253,17 @@ case "${1:-status}" in
         agent_rc=$?
       fi
       if [[ $probe_rc -eq 1 ]]; then
-        echo "🔴 OFF — verified authentication denial; safe mode only ($HOST_ALIAS: cc read-only + WORK_DIRS writable)"
+        echo "🔴 DEDICATED GATE: OFF — luffy-arm-admin was explicitly denied."
+        if report_effective_access; then
+          : # Layered state is complete: gate OFF, effective ADMIN_USER access still available.
+        else
+          effective_rc=$?
+          if [[ $effective_rc -eq 2 ]]; then
+            exit 3
+          fi
+        fi
       else
-        echo "🟡 UNKNOWN — this environment cannot prove whether full-power is ON or OFF."
+        echo "🟡 DEDICATED GATE: UNKNOWN — this environment cannot prove its state."
         [[ $agent_rc -eq 2 && -n "$AGENT_DETAIL" ]] && echo "    ssh-agent: $AGENT_DETAIL"
         [[ -n "$AUTH_DETAIL" ]] && echo "    ssh probe: $AUTH_DETAIL"
         echo "    Do not treat UNKNOWN as OFF. Agent: retry with approved host execution."

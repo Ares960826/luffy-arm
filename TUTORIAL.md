@@ -247,8 +247,8 @@ Or just ask the agent: *"download `/data/run42` from the server"* — secrets in
 - ✅ **Can:** read your data, run commands, inspect logs, diagnose — on the server.
 - 🚫 **Can't in safe mode (by design):** write outside `WORK_DIRS`, run `sudo`, touch your
   passwords, or move itself / its config onto the server.
-- 🔓 **Full-power mode (opt-in, off by default):** when you *want* the agent to read/write as
-  yourself, run `bash scripts/admin-keygen.sh` (makes a passphrase-protected key — an empty
+- 🔓 **Full-power mode (opt-in; dedicated gate off by default):** when you *want* the agent
+  to run as your remote identity, run `bash scripts/admin-keygen.sh` (makes a passphrase-protected key — an empty
   passphrase is rejected), install its pubkey under your own account (server-setup §5 — or
   `ssh-copy-id`), then `bash scripts/fullpower.sh on` (you type the passphrase) and check with
   `bash scripts/verify-fullpower.sh`. It auto-disables after ~1h; `fullpower.sh off` ends it
@@ -257,7 +257,11 @@ Or just ask the agent: *"download `/data/run42` from the server"* — secrets in
   the passphrase command personally. In a runtime known to sandbox SSH, the agent should request
   approved host execution directly rather than first running a blocked sandbox probe. `UNKNOWN`
   means host verification was unavailable — never assume it is OFF or ask the user to re-arm solely
-  because the sandbox could not observe the key.
+  because the sandbox could not observe the key. Status also checks a second layer: if the
+  dedicated gate is OFF but another key authenticates as the same remote user with
+  `IdentitiesOnly=no`, effective user access is still AVAILABLE. That is not Safe Mode. The key
+  chooses an authentication route, not a Unix permission tier; verify write access per target
+  path and sudo separately.
 
   The ON command also publishes a stable agent socket reference under `~/.config/luffy-arm/`.
   That lets separate conversations use the same time-limited gate even if they inherited different
