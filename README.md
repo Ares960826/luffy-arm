@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
-  <img src="https://img.shields.io/badge/version-v1.7.1-brightgreen.svg" alt="Version v1.7.1">
+  <img src="https://img.shields.io/badge/version-v1.8.0-brightgreen.svg" alt="Version v1.8.0">
 </p>
 
 **Give a *local* AI coding agent a remote hand.** The agent's brain — its process,
@@ -71,7 +71,9 @@ It hands you the exact privileged commands; you run them with your sudo
 ## Prerequisites
 
 - **Local:** an AI CLI agent (Claude Code / Codex / Cursor / OpenCode) + OpenSSH.
-- **Remote:** Linux with `sshd` + the `acl` package + a sudo-capable human (one-time setup only).
+  Target/session lifecycle commands require Python 3.9+ on macOS/Linux for file locks.
+- **Remote:** Linux with `sshd`. The key-based `cc` setup additionally needs the `acl`
+  package and a sudo-capable human; existing-account password sessions need neither.
 
 ## Install
 
@@ -124,6 +126,30 @@ First time? The friendly end-to-end walkthrough is [`TUTORIAL.md`](TUTORIAL.md).
 [`ares-agent-toolkit`](https://github.com/Ares960826/ares-agent-toolkit) as a submodule.
 
 ## Quick start
+
+**Upgrading from the single-server version:** run `luffy update`, then register your
+existing key params with the command below. Keys, SSH configuration and target/session
+records live outside the installed skill and remain in place. A key passphrase prompt
+and an account password prompt are both normal; type the requested secret only into
+the SSH/ssh-add prompt. `--password` selects account-password authentication and never
+takes a secret value. `luffy version` reports the installed release.
+
+**Registered servers:** `luffy tlist` lists target IDs, display names,
+login modes and the default. Register an existing key setup with
+`luffy target add my-lab --params ~/.config/luffy-arm/params.sh --name "My lab"`.
+Both key and password targets accept a duration:
+`luffy fullpower on my-lab 120000` and
+`luffy fullpower on my-cluster --password 120000`.
+See [registration, defaults and duration rules](references/targets.md).
+
+**Existing account with password login:** the human runs
+`luffy fullpower on TARGET --password` once in a local terminal. The agent then reuses
+the background connection; the terminal may close. Repeating ON reuses the same
+connection. Use `luffy fullpower status --all` to inspect targets and
+`luffy fullpower off --all` to close registered sessions and key gates.
+This supports servers where the user cannot install a key
+or create a `cc` account. Local Python 3 is required. See
+[target setup and session lifecycle](references/user-sessions.md).
 
 **The easy way — let your agent drive it.** After installing, just say:
 
@@ -204,6 +230,12 @@ type short subcommands instead of full script paths:
 luffy-arm help                 # list everything
 luffy-arm verify               # safe-mode channel + safety-net check
 luffy-arm fullpower on|off     # opt-in write-as-yourself (you type the passphrase)
+luffy-arm fullpower on TARGET --password # selected server, you type the password
+luffy-arm fullpower on TARGET 120000 --password # elapsed lifetime in seconds
+luffy-arm tlist                         # discover registered server names
+luffy-arm fullpower off|status TARGET    # close/check the selected session
+luffy-arm fullpower off --all           # shut down registered sessions and key gates
+luffy-arm fullpower status --all        # inspect all registered targets
 luffy-arm fullpower-on|off     # intent-shaped aliases used by the switch skills
 luffy-arm audit-gen            # generate the opt-in server audit script
 luffy-arm setup | grant | update | …

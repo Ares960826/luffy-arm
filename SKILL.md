@@ -1,6 +1,7 @@
 ---
 name: luffy-arm
-version: 1.7.1
+metadata:
+  version: "1.8.0"
 description: Use when a local AI agent needs to reach into a remote Linux server over SSH — to explore data, run commands, inspect logs, diagnose something on the server, or pull data down to the local machine — or to set up that SSH access for the first time. Triggers include "luffy-arm", "connect to my server", "ssh into the remote box", "explore/poke around the server", "run this on the server", "download/fetch data from the server", "set up remote access", "reverse remote-ssh", 远程服务器, 远程开发. Not for purely local work, and not for moving the agent or its config onto the server.
 ---
 
@@ -9,9 +10,24 @@ description: Use when a local AI agent needs to reach into a remote Linux server
 Give a **local** agent a **remote hand**: the agent's brain (process, config, memory)
 stays on this machine; an SSH "arm" reaches into a remote Linux server to **read,
 run, and diagnose** — never to rewrite. Native parts only (SSH keys, ssh config,
-ControlMaster, POSIX ACLs). The agent logs in as a non-privileged `cc` account.
+ControlMaster, POSIX ACLs). Key-based safe mode uses a non-privileged `cc` account;
+registered password sessions use the existing account and its actual permissions.
 
 ## Which mode am I in?
+- For registered targets, read [targets.md](references/targets.md). Discover IDs
+  with `python3 scripts/targets.py list`; register key/password servers through
+  `targets.py add`, never special-case a server name. Use
+  `python3 scripts/power.py status TARGET` / `off TARGET` for either login mode.
+- A target uses a user-opened password/interactive session → read
+  [user-sessions.md](references/user-sessions.md). Select its explicit target ID and call
+  `python3 scripts/session.py status TARGET` / `run TARGET 'command'`. The human alone
+  runs `luffy fullpower on TARGET --password` in their terminal. This path uses the
+  existing account's permissions, not cc isolation. Do not run the cc installer or
+  the default key gate (`scripts/fullpower.sh`) for it.
+  New password connections run in the background after human authentication.
+  Repeated ON reuses them. For explicit all-target shutdown/status, call
+  `python3 scripts/lifecycle.py all off` / `all status` on the host. OFF targets
+  registered Luffy resources only; incomplete closure must not be reported as success.
 - `ssh <alias>` already works (Host in `~/.ssh/config`; `ssh -O check <alias>` ok) → **USE mode**.
 - Otherwise → **INSTALL mode** (set it up first).
 
@@ -40,7 +56,7 @@ and the data-read-only net — but INV-1 and INV-3 still hold even there.
 - **INV-2 — local is the source of truth.** Over the channel you **read / run / diagnose
   only.** Do **not** edit remote source files (no `sed -i`, `vim`, `tee`, `>` on a remote
   path). Fix locally, then sync.
-- **INV-3 — never touch a password.** Login is by key. `sudo` and every server-root action
+- **INV-3 — never touch a password.** Login uses keys or a user-opened password session. `sudo` and every server-root action
   use a password the **user** types. Never embed or ask for a password or key passphrase;
   never add NOPASSWD sudoers to dodge the gate.
 - **Server-root is the user's job.** Account creation, `setfacl`, installing keys = **you
@@ -121,6 +137,9 @@ edit/write **as themselves**, full-power mode is available — treat it as a loa
 - **Enabling is ALWAYS the user, NEVER you.** They run `bash scripts/fullpower.sh on` and type
   the passphrase. Never auto-load the key, never make it passphrase-less, never add it to
   ssh-agent on their behalf, never enable it "to save a step" (that removes the gate = INV-3).
+  Repeated ON now leaves an already loaded, verified key and its expiry unchanged.
+  A new duration requires an explicit OFF followed by ON. Lifecycle operations require
+  local Python 3 for kernel locks; locks are automatically released on process exit.
 - **Dedicated switch operations:** the plugin bundles two companion skills because current skill
   hosts expose each slash-invokable operation as an independent skill (there is no nested-skill
   metadata). Their UI labels group them under Luffy Arm. An explicit "turn on full power" request

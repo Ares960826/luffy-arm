@@ -5,6 +5,11 @@
 # user capability are reported separately.
 # Usage: bash scripts/fullpower.sh [on [seconds] | off | status]
 set -euo pipefail
+if [[ "${1:-}" == --locked ]]; then
+  shift  # Internal entry; lifecycle.py already holds the global/key locks.
+else
+  exec python3 "$(dirname "${BASH_SOURCE[0]}")/lifecycle.py" key "$@"
+fi
 PARAMS="${LUFFY_ARM_PARAMS:-$HOME/.config/luffy-arm/params.sh}"
 [[ -f "$PARAMS" ]] || { echo "Missing params: $PARAMS — copy scripts/params.example.sh there and fill it in."; exit 1; }
 # shellcheck source=/dev/null
@@ -33,6 +38,7 @@ publish_agent_socket() {
     echo "❌ No usable SSH_AUTH_SOCK in this terminal." >&2
     return 1
   }
+  [[ "$source_socket" != "$FULLPOWER_AGENT_SOCKET" ]] || return 0
   socket_dir="$(dirname "$FULLPOWER_AGENT_SOCKET")"
   mkdir -p "$socket_dir"
   chmod 700 "$socket_dir"
@@ -172,6 +178,17 @@ admin_alias_uses_agent_socket() {
 
 case "${1:-status}" in
   on)
+    # Repeated ON is idempotent: never reload or silently extend an existing key.
+    if agent_state; then
+      if auth_probe; then
+        echo "🟢 DEDICATED GATE: ALREADY ON — reused for $AUTH_IDENTITY; expiry unchanged."
+        echo "   No key reloaded. To choose a new duration, explicitly turn OFF, then ON."
+        exit 0
+      fi
+      echo "🟡 Key is already loaded, but remote access is unverified; no reload or renewal."
+      [[ -z "$AUTH_DETAIL" ]] || echo "   $AUTH_DETAIL"
+      exit 3
+    fi
     [[ -f "$ADMIN_KEY" ]] || { echo "❌ Missing admin key $ADMIN_KEY — run first: bash scripts/admin-keygen.sh"; exit 1; }
     [[ -f "$ADMIN_KEY.pub" ]] || { echo "❌ Missing admin public key $ADMIN_KEY.pub — re-run: bash scripts/admin-keygen.sh"; exit 1; }
     admin_alias_uses_key || {
@@ -185,6 +202,10 @@ case "${1:-status}" in
       exit 1
     }
     ttl="${2:-$FULLPOWER_TTL}"
+    # Reuse the published agent even when this terminal has a different SSH_AUTH_SOCK.
+    if socket="$(agent_socket 2>/dev/null)"; then
+      export SSH_AUTH_SOCK="$socket"
+    fi
     if ! ssh-add -t "$ttl" "$ADMIN_KEY"; then
       echo "🟡 full-power was NOT enabled in this shell."
       echo "   Agent runtimes: retry with approved host execution. Human fallback: run in your login terminal:"
@@ -206,6 +227,23 @@ case "${1:-status}" in
     echo "   Shared across conversations through $FULLPOWER_AGENT_SOCKET."
     echo "   REMOTE IDENTITY: $AUTH_IDENTITY via the dedicated luffy-arm-admin credential."
     echo "   EFFECTIVE PERMISSIONS: those of $ADMIN_USER; verify target-path write and sudo separately."
+    ;;
+  close-safe)
+    # Local mux controls only: never opens a new connection or kills unrelated SSH.
+    [[ -n "${HOST_ALIAS:-}" ]] || exit 0
+    if detail="$(ssh -O check "$HOST_ALIAS" 2>&1)"; then
+      ssh -O exit "$HOST_ALIAS" || exit 3
+      if detail="$(ssh -O check "$HOST_ALIAS" 2>&1)"; then
+        echo "Safe connection is still present: $HOST_ALIAS"; exit 3
+      elif [[ "$detail" != *"No such file or directory"* && "$detail" != *"No ControlPath specified"* ]]; then
+        echo "Safe connection closure UNKNOWN: $detail"; exit 3
+      fi
+      echo "Luffy safe connection closed: $HOST_ALIAS"
+    elif [[ "$detail" == *"No such file or directory"* || "$detail" == *"No ControlPath specified"* ]]; then
+      echo "No active Luffy safe connection: $HOST_ALIAS"
+    else
+      echo "Safe connection UNKNOWN: $detail"; exit 3
+    fi
     ;;
   off)
     if socket="$(agent_socket 2>/dev/null)"; then

@@ -2,9 +2,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TMP="$(mktemp -d "${TMPDIR:-/tmp}/luffy-arm-state-test.XXXXXX")"
+TMP="$(mktemp -d /tmp/luffy-key-test.XXXXXX)"
 trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/bin" "$TMP/home/.config/luffy-arm" "$TMP/home/.ssh"
+chmod 700 "$TMP/home/.config/luffy-arm"
 touch "$TMP/home/.ssh/luffy-arm-admin-key" "$TMP/home/.ssh/luffy-arm-admin-key.pub"
 
 cat > "$TMP/home/.config/luffy-arm/params.sh" <<'EOF'
@@ -14,13 +15,26 @@ export HOST_ALIAS="safe-alias"
 export CC_USER="cc"
 export ADMIN_ALIAS="admin-alias"
 export ADMIN_USER="example-admin"
-export ADMIN_KEY="$HOME/.ssh/luffy-arm-admin-key"
-export FULLPOWER_AGENT_SOCKET="$HOME/.config/luffy-arm/fullpower-agent.sock"
+export ADMIN_KEY="$LUFFY_TEST_ROOT/home/.ssh/luffy-arm-admin-key"
+export FULLPOWER_AGENT_SOCKET="$LUFFY_TEST_ROOT/home/.config/luffy-arm/fullpower-agent.sock"
 EOF
+
+python3 - "$TMP/home/.config/luffy-arm/fullpower-agent.sock" <<'PY'
+import socket, sys
+sock = socket.socket(socket.AF_UNIX)
+sock.bind(sys.argv[1])
+sock.close()  # Only its type is inspected; ssh-add below is inert.
+PY
 
 cat > "$TMP/bin/ssh" <<'EOF'
 #!/usr/bin/env bash
+if [[ "${1:-}" == -G ]]; then
+  echo "identityfile $LUFFY_TEST_ROOT/home/.ssh/luffy-arm-admin-key.pub"
+  echo "identityagent $LUFFY_TEST_ROOT/home/.config/luffy-arm/fullpower-agent.sock"
+  exit 0
+fi
 [[ " $* " == *" -O exit "* ]] && exit 0
+[[ " $* " == *" -O check "* ]] && { echo 'No such file or directory' >&2; exit 255; }
 if [[ " $* " == *" IdentitiesOnly=no "* ]]; then
   state="${MOCK_ALT_STATE:-deny}"
 else
@@ -43,6 +57,13 @@ EOF
 cat > "$TMP/bin/ssh-add" <<'EOF'
 #!/usr/bin/env bash
 [[ "${1:-}" == "-d" ]] && exit 0
+if [[ "${1:-}" == "-l" && "${MOCK_KEY_LOADED:-no}" == yes ]]; then
+  echo '256 SHA256:admin-fingerprint luffy-arm-admin (ED25519)'; exit 0
+fi
+if [[ "${1:-}" == "-t" ]]; then
+  echo "$*" >> "$LUFFY_TEST_ROOT/add-calls"
+  exit 0
+fi
 echo "The agent has no identities." >&2
 exit 1
 EOF
@@ -52,7 +73,9 @@ run_case() {
   local strict="$1" alternate="$2" operation="$3"
   set +e
   OUTPUT="$({
-    HOME="$TMP/home" \
+    LUFFY_TEST_ROOT="$TMP" \
+    LUFFY_ARM_PARAMS="$TMP/home/.config/luffy-arm/params.sh" \
+    LUFFY_ARM_STATE_DIR="$TMP/home/.config/luffy-arm" \
     PATH="$TMP/bin:$PATH" \
     MOCK_STRICT_STATE="$strict" \
     MOCK_ALT_STATE="$alternate" \
@@ -107,5 +130,26 @@ run_case unknown allow status
 [[ $RC -eq 3 ]]
 contains "DEDICATED GATE: UNKNOWN"
 not_contains "DEDICATED GATE: OFF"
+
+export MOCK_KEY_LOADED=yes
+run_case allow deny on
+[[ $RC -eq 0 ]]
+contains "ALREADY ON"
+contains "expiry unchanged"
+[[ ! -e "$TMP/add-calls" ]]
+
+run_case unknown deny on
+[[ $RC -eq 3 ]]
+contains "no reload or renewal"
+[[ ! -e "$TMP/add-calls" ]]
+
+export MOCK_KEY_LOADED=no
+run_case allow deny on
+[[ $RC -eq 0 ]]
+contains "DEDICATED GATE: ON"
+[[ $(wc -l < "$TMP/add-calls") -eq 1 ]]
+# Publishing the previously shared socket must never make it a self-referential link.
+[[ -S "$TMP/home/.config/luffy-arm/fullpower-agent.sock" ]]
+[[ ! -L "$TMP/home/.config/luffy-arm/fullpower-agent.sock" ]]
 
 echo "fullpower layered-state regression tests: passed"

@@ -6,8 +6,6 @@
 # scripts/*.sh directly (PATH-independent, per SKILL.md).
 set -euo pipefail
 
-VERSION="1.7.1"
-
 # Resolve this script's real dir even when invoked via a symlink (e.g. ~/.local/bin/luffy-arm),
 # so the sibling scripts are found next to the real file, not next to the symlink.
 SOURCE="${BASH_SOURCE[0]}"
@@ -17,6 +15,7 @@ while [[ -h "$SOURCE" ]]; do
   [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
 done
 SCRIPTS="$(cd -P "$(dirname "$SOURCE")" >/dev/null 2>&1 && pwd)"
+VERSION="$(cat "$SCRIPTS/../VERSION")"
 
 run(){ # forward to a sibling script, erroring clearly if it's missing
   local s="$SCRIPTS/$1"; shift
@@ -29,6 +28,12 @@ luffy-arm — give a local agent a remote hand over SSH (unified command)
 
 usage: luffy-arm <command> [args]
 
+  targets:
+    tlist                         list registered target IDs, names and login modes
+    target add TARGET --password --host HOST --user USER [--name NAME]
+    target add TARGET --params /path/to/params.sh [--name NAME]
+    target default TARGET         choose the target for commands without a name
+
   setup / channel:
     keygen                 create the agent SSH key
     ssh-config             write the ~/.ssh/config Host block(s)
@@ -36,12 +41,20 @@ usage: luffy-arm <command> [args]
     verify                 safe-mode channel + safety-net check
     grant ro|rw <path>     print the server commands to grant a new read/write dir
 
-  full-power (opt-in; YOU type the passphrase — never the agent):
+  full-power (opt-in; YOU type the passphrase/password — never the agent):
     admin-keygen           create the passphrased admin key
     fullpower on|off|status
+    fullpower on [TARGET] [DURATION] [--password]
+                                  duration in seconds or units (2h, 1h30m)
+    fullpower off|status TARGET    close/check only that server's session
+    fullpower off --all            close all registered sessions and key gates
+    fullpower status --all         check all registered targets
     fullpower-on [seconds] human-gated ON shortcut
     fullpower-off          verified OFF shortcut
     verify-fullpower       full-power self-check
+
+  session utilities (lifecycle commands require Python 3.9+):
+    session run TARGET 'command'  reuse only that session; never reauthenticate
 
   auditing (opt-in; enable/disable are run on the SERVER with your sudo):
     audit-gen              generate the server audit script (has enable|disable|status|show)
@@ -55,15 +68,18 @@ EOF
 
 cmd="${1:-help}"; shift 2>/dev/null || true
 case "$cmd" in
+  tlist)                exec python3 "$SCRIPTS/targets.py" list "$@" ;;
+  target)               exec python3 "$SCRIPTS/targets.py" "$@" ;;
+  session)              exec python3 "$SCRIPTS/session.py" "$@" ;;
   keygen)               run keygen.sh "$@" ;;
   ssh-config)           run ssh-config.sh "$@" ;;
   setup)                run gen-server-setup.sh "$@" ;;
   verify)               run verify.sh "$@" ;;
   grant)                run grant.sh "$@" ;;
   admin-keygen)         run admin-keygen.sh "$@" ;;
-  fullpower)            run fullpower.sh "$@" ;;
-  fullpower-on)         run fullpower.sh on "$@" ;;
-  fullpower-off)        run fullpower.sh off "$@" ;;
+  fullpower)            run fullpower-route.sh "$@" ;;
+  fullpower-on)         run fullpower-route.sh on "$@" ;;
+  fullpower-off)        run fullpower-route.sh off "$@" ;;
   verify-fullpower)     run verify-fullpower.sh "$@" ;;
   audit-gen)            run gen-audit-setup.sh "$@" ;;
   update)               run update.sh "$@" ;;

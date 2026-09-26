@@ -11,14 +11,14 @@ REPO_URL="https://github.com/Ares960826/luffy-arm"
 RAW_INSTALL="https://raw.githubusercontent.com/Ares960826/luffy-arm/main/install.sh"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # skill root = scripts/..
 
-ver_of(){ sed -n 's/^version:[[:space:]]*//p' "$1" 2>/dev/null | head -1; }
-echo "current version: $(ver_of "$HERE/SKILL.md" || true)"
-
+echo "current version: $(cat "$HERE/VERSION" 2>/dev/null || sed -n 's/^version:[[:space:]]*//p' "$HERE/SKILL.md" | head -1)"
 if [[ -d "$HERE/.git" ]]; then
   echo "→ git clone detected — pulling latest…"
   git -C "$HERE" pull --ff-only
   bash "$HERE/install.sh"
 else
+  # An installed copy updates its own skills directory; other agents are opt-in.
+  export LUFFY_ARM_DIR="${LUFFY_ARM_DIR:-$(dirname "$HERE")}"
   echo "→ installed copy (no .git) — re-running the official installer…"
   if command -v curl >/dev/null 2>&1; then
     curl -fsSL "$RAW_INSTALL" | bash

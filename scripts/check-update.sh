@@ -4,7 +4,7 @@
 REPO_URL="https://github.com/Ares960826/luffy-arm"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-cur="$(sed -n 's/^version:[[:space:]]*//p' "$HERE/SKILL.md" 2>/dev/null | head -1)"
+cur="$(cat "$HERE/VERSION" 2>/dev/null || sed -n 's/^version:[[:space:]]*//p' "$HERE/SKILL.md" 2>/dev/null | head -1)"
 [[ -n "$cur" ]] || exit 0
 
 # latest published tag (works without a local clone); short low-speed timeout so we never hang

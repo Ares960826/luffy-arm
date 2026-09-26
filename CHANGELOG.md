@@ -3,6 +3,38 @@
 All notable changes to luffy-arm. Format follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/). Versions before 1.2.0 are tagged retroactively.
 
+## [1.8.0] — 2026-09-26
+
+- Unify key and password targets under `target add`, `target default`, and `tlist`.
+  All registered targets share one parser and scoped ON/OFF/status behavior.
+- Accept target plus duration, including `on TARGET --password 120000` and
+  `on TARGET 120000 --password`. Bad flags/durations and unknown IDs get actionable errors.
+- Timed password sessions have a detached elapsed-time expiry worker. Early OFF
+  removes its record and the worker exits; generation checks protect replacement
+  sessions. Untimed sessions remain available until OFF/disconnect.
+
+- Password login now uses OpenSSH's native authentication-then-background flow.
+  The terminal may close after verified ON; repeated ON explicitly reports reuse.
+- Add `fullpower off --all` and `fullpower status --all` for registered sessions
+  and registered key gates. Cleanup is scoped, partial failures remain visible,
+  and shared ssh-agent/unrelated SSH processes are never killed.
+- Serialize lifecycle changes with kernel locks. Repeated key-gate ON reuses the
+  loaded credential without resetting its TTL. Lifecycle commands now require
+  Python 3; no permanent background service is installed.
+
+- Add optional per-target, user-authenticated SSH sessions with `fullpower on TARGET
+  --password`, `fullpower status TARGET`, `fullpower off TARGET` and `session run`.
+  Existing default key-gate commands and their duration arguments remain compatible.
+  Password targets show a corrected command when `--password` is omitted.
+  The human types credentials directly into
+  OpenSSH; agents reuse the selected socket without authentication fallback.
+- Add explicit attachment of an existing user-authenticated socket for migration.
+  Existing key-based and Full Power commands retain their behavior. Password sessions use the existing account
+  permissions; they do not add server-side permission isolation.
+
+- Ship a canonical `VERSION` file and supported skill `metadata.version`; updates
+  stay within the selected installation directory and preserve external target config.
+
 ## [1.7.1] — 2026-08-26
 
 Patch release correcting the security meaning of the Full Power switch.

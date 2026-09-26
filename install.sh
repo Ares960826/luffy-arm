@@ -31,6 +31,9 @@ if [[ -z "$SRC" ]]; then          # piped via curl, or not run from a clone → 
   SRC="$TMP/$SKILL_NAME"
 fi
 [[ -f "$SRC/SKILL.md" ]] || { echo "❌ skill source not found (no SKILL.md at $SRC)"; exit 1; }
+command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(sys.version_info < (3, 9))' || {
+  echo "❌ Python 3.9+ is required for target/session lifecycle commands." >&2; exit 1;
+}
 
 # --- 2. detect agents → target skills dirs (deduped) ---
 TARGETS=(); AGENTS=()
@@ -62,13 +65,14 @@ copy_into(){
   # Product allowlist: local development/test artifacts are excluded by default.
   if command -v rsync >/dev/null 2>&1; then
     rsync -a --delete --delete-excluded \
+      --exclude='__pycache__/' --exclude='*.pyc' \
       --include='/SKILL.md' --include='/TUTORIAL.md' --include='/README.md' \
-      --include='/LICENSE' --include='/CHANGELOG.md' --include='/install.sh' \
+      --include='/LICENSE' --include='/CHANGELOG.md' --include='/install.sh' --include='/VERSION' \
       --include='/scripts/***' --include='/references/***' --include='/agents/***' --exclude='*' \
       "$SRC/" "$dest/"
   else
     rm -rf "$dest"; mkdir -p "$dest"       # poor man's --delete: no stale files across upgrades
-    for item in SKILL.md TUTORIAL.md README.md LICENSE CHANGELOG.md install.sh scripts references agents; do
+    for item in SKILL.md TUTORIAL.md README.md LICENSE CHANGELOG.md install.sh VERSION scripts references agents; do
       [[ -e "$SRC/$item" ]] && cp -R "$SRC/$item" "$dest/"
     done
   fi
@@ -106,7 +110,7 @@ done
 # dispatcher, so updates track automatically; remove it any time with `rm ~/.local/bin/luffy-arm`.
 CMD_NOTE=""
 DISPATCH="${TARGETS[0]}/$SKILL_NAME/scripts/luffy-arm"
-if [[ -f "$DISPATCH" ]]; then
+if [[ -f "$DISPATCH" && "${LUFFY_ARM_NO_CLI:-0}" != 1 ]]; then
   BINDIR="$HOME/.local/bin"
   mkdir -p "$BINDIR"
   if ln -sf "$DISPATCH" "$BINDIR/$SKILL_NAME" 2>/dev/null; then

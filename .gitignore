@@ -17,3 +17,12 @@ id_rsa*
 .DS_Store
 *.swp
 *~
+
+# Python session helper and maintained regression tests
+__pycache__/
+*.pyc
+!tests/
+!tests/session-test.py
+!tests/fullpower-route-test.py
+!tests/background-test.py
+!tests/install-test.py

@@ -3,13 +3,13 @@ set -euo pipefail
 
 HERE="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 for main in \
-  "$HERE/../../luffy-arm/scripts/fullpower.sh" \
-  "$HERE/../../../scripts/fullpower.sh"
+  "$HERE/../../luffy-arm/scripts/fullpower-route.sh" \
+  "$HERE/../../../scripts/fullpower-route.sh"
 do
   if [[ -f "$main" ]]; then
     exec bash "$main" off "$@"
   fi
 done
 
-echo "luffy-arm-fullpower-off: sibling luffy-arm/scripts/fullpower.sh not found" >&2
+echo "luffy-arm-fullpower-off: sibling luffy-arm/scripts/fullpower-route.sh not found" >&2
 exit 1

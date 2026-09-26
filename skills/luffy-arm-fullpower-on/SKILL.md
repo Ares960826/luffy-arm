@@ -1,6 +1,7 @@
 ---
 name: luffy-arm-fullpower-on
-version: 1.7.1
+metadata:
+  version: "1.8.0"
 description: Use when the user explicitly asks to turn on, enable, open, or arm luffy-arm full-power mode, including "turn on full power", "enable full-power", 打开 full power, 开启全功率模式. Check layered host status first and reuse an already-ON dedicated gate; gate state and effective ADMIN_USER access are distinct. The agent never loads the key for them.
 ---
 
@@ -11,9 +12,26 @@ This is the explicit ON companion operation for luffy-arm. Read the sibling `luf
 
 ## Operation
 
+If a registered target is selected, read the main skill's `references/targets.md`
+and check `python3 scripts/power.py status TARGET` on the host. Only the human runs
+`luffy fullpower on TARGET [DURATION] [--password]`; the password flag is required
+only for password targets. Reuse ON without renewing expiry. Preserve the explicit
+target; never fall back to the default key params. The default-key procedure below
+is only for unregistered legacy setups or a deliberately selected default.
+
+For an explicitly selected password-session target, read the main skill's
+`references/user-sessions.md` and check `python3 scripts/session.py status TARGET`
+on the host first. Reuse verified ON; UNKNOWN is not OFF. Only verified OFF calls
+for the human to run `luffy fullpower on TARGET --password`. Never run ON for them.
+Use that target throughout; skip the default key-gate procedure below. If several
+targets are in scope and the intended target is unclear, ask which one first.
+New password connections detach after authentication; old foreground connections
+need an explicit OFF/ON by the human to migrate. Neither repeated session ON nor
+repeated key-gate ON silently renews a lifetime or creates another managed connection.
+
 1. Confirm the user explicitly asked to enable full-power. Never infer consent from a task that
    merely needs write access.
-2. **Check before re-arming.** Run the main skill's `bash scripts/fullpower.sh status` from the
+2. **Check before re-arming.** Run the main skill's `python3 scripts/power.py status` from the
    sibling `luffy-arm` directory before showing any ON command. If the agent runtime is known to
    sandbox SSH or ssh-agent, request narrowly scoped, user-approved **host execution** for this
    first check immediately; do not run a known-blocked sandbox probe first.
@@ -36,7 +54,7 @@ This is the explicit ON companion operation for luffy-arm. Read the sibling `luf
    bash scripts/fullpower-on.sh [seconds]
    ```
 
-   The wrapper delegates to the main `luffy-arm/scripts/fullpower.sh on`; it checks the admin key
+   The wrapper delegates to the main `luffy-arm/scripts/fullpower-route.sh on`; it checks the admin key
    and SSH alias, then the user types the key passphrase directly into `ssh-add`. ON publishes a
    stable reference to that time-limited agent so other conversations can use the same gate without
    inheriting the same `SSH_AUTH_SOCK`. Never request, capture, paste, or store that passphrase.
